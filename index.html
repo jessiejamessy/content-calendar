@@ -406,8 +406,8 @@
     <script>
         // IMPORTANT FIRESTORE SECURITY RULES:
         // To allow public read/write access for authenticated users (including anonymous ones)
-        // to the 'posts' and 'customWeeklyTitles' collections, you MUST set the following
-        // rules in your Firebase project's Firestore Database -> Rules section:
+        // to the 'posts', 'customWeeklyTitles', AND 'globalPreferences' collections,
+        // you MUST set the following rules in your Firebase project's Firestore Database -> Rules section:
         /*
         rules_version = '2';
         service cloud.firestore {
@@ -419,6 +419,7 @@
           }
         }
         */
+        // Replace {appId} with your actual Firebase Project ID (e.g., 'contentcalendar-10154').
         // Without these rules, you will get "Missing or insufficient permissions" errors.
 
         // IMPORTANT FIREBASE AUTHENTICATION SETTINGS:
@@ -457,6 +458,13 @@
             let customWeeklyTitles = {}; // This will now be populated by Firestore
             let currentUserId = null;
             let isAdminLoggedIn = false; // Initial state
+
+            // Global preferences from Firestore
+            let globalPreferences = {
+                platformFilter: 'All Platforms',
+                statusFilter: 'All Statuses',
+                weekStartDay: 'Monday'
+            };
 
             // UI Elements
             const platformFilter = document.getElementById('platformFilter');
@@ -559,10 +567,8 @@
                 }
             }
 
-            let preferredWeekStartDay = localStorage.getItem('weekStartDay') || 'Monday';
-            weekStartDayFilter.value = preferredWeekStartDay;
-
-            let currentWeekStartDate = getWeekStartDate(new Date(), preferredWeekStartDay);
+            // `preferredWeekStartDay` will now be managed by `globalPreferences`
+            let currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
 
             function getWeekStartDate(d, startDayName) {
                 d = new Date(d);
@@ -585,7 +591,7 @@
             }
 
             function getWeekRangeText(date) {
-                const start = getWeekStartDate(new Date(date), preferredWeekStartDay);
+                const start = getWeekStartDate(new Date(date), globalPreferences.weekStartDay); // Use global preference
                 const end = new Date(start);
                 end.setDate(start.getDate() + 6);
                 const options = { month: 'long', day: 'numeric', year: 'numeric' };
@@ -594,7 +600,7 @@
 
             function getCurrentWeekId() {
                 const weekStartDateFormatted = formatDate(currentWeekStartDate);
-                return `${weekStartDateFormatted}-${preferredWeekStartDay}Start`;
+                return `${weekStartDateFormatted}-${globalPreferences.weekStartDay}Start`; // Use global preference
             }
 
             function getOrderedDaysOfWeek(startDayName) {
@@ -623,6 +629,7 @@
                         ${post.status}
                     </div>
                     ${post.resources ? `<p class="text-sm text-slate-600 mt-2"><strong>Resources:</strong> <a href="${post.resources}" target="_blank" class="text-blue-500 hover:underline">${post.resources.length > 30 ? post.resources.substring(0, 27) + '...' : post.resources}</a></p>` : ''}
+                    ${post.outputLink && post.status === 'Posted' ? `<p class="text-sm mt-2"><button onclick="window.open('${post.outputLink}', '_blank')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-full text-xs transition-colors">View Post</button></p>` : ''}
                     ${isAdminLoggedIn ? `
                     <button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 delete-post-btn" data-id="${post.id}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -676,8 +683,9 @@
             }
 
             function getFilteredPosts() {
-                const selectedPlatform = platformFilter.value;
-                const selectedStatus = statusFilter.value;
+                // Use global preferences for filtering
+                const selectedPlatform = globalPreferences.platformFilter;
+                const selectedStatus = globalPreferences.statusFilter;
 
                 const weekStart = new Date(currentWeekStartDate);
                 weekStart.setHours(0, 0, 0, 0);
@@ -724,7 +732,7 @@
             }
 
             function renderAllContent() {
-                const orderedDays = getOrderedDaysOfWeek(preferredWeekStartDay);
+                const orderedDays = getOrderedDaysOfWeek(globalPreferences.weekStartDay); // Use global preference
                 const currentWeekRangeText = getWeekRangeText(currentWeekStartDate);
                 const weekId = getCurrentWeekId();
                 const isDarkMode = document.documentElement.classList.contains('dark');
@@ -742,6 +750,11 @@
                 
                 currentWeekDisplay.textContent = currentWeekRangeText;
                 currentUserIdDisplay.textContent = currentUserId ? `User ID: ${currentUserId}` : '';
+
+                // Set filter dropdowns based on global preferences
+                platformFilter.value = globalPreferences.platformFilter;
+                statusFilter.value = globalPreferences.statusFilter;
+                weekStartDayFilter.value = globalPreferences.weekStartDay;
 
 
                 const currentWeekGrid = document.getElementById('current-week-grid');
@@ -801,7 +814,7 @@
                     const postDate = new Date(post.publishDate);
                     postDate.setHours(0,0,0,0);
                     
-                    const startOfWeekOfPost = getWeekStartDate(postDate, preferredWeekStartDay);
+                    const startOfWeekOfPost = getWeekStartDate(postDate, globalPreferences.weekStartDay); // Use global preference
                     const diffTime = postDate.getTime() - startOfWeekOfPost.getTime();
                     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
@@ -815,7 +828,7 @@
                     const postDate = new Date(post.publishDate);
                     postDate.setHours(0,0,0,0);
                     
-                    const startOfWeekOfPost = getWeekStartDate(postDate, preferredWeekStartDay);
+                    const startOfWeekOfPost = getWeekStartDate(postDate, globalPreferences.weekStartDay); // Use global preference
                     const diffTime = postDate.getTime() - startOfWeekOfPost.getTime();
                     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
@@ -940,6 +953,9 @@
                         option.textContent = pf;
                         platformFilter.appendChild(option);
                     });
+                    // Ensure the selected value in the dropdown matches the global preference
+                    platformFilter.value = globalPreferences.platformFilter;
+
                 } catch (e) {
                     console.error("Error populating filters:", e);
                 }
@@ -1002,8 +1018,7 @@
                         const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), newPostData);
                         // newPostData.id = docRef.id; // This line is commented out, but onSnapshot will re-fetch anyway.
                     }
-                    populateFilters(); // Re-populate platform filter dropdown
-                    statusFilter.value = 'All Statuses'; // Reset status filter to "All Statuses"
+                    // No need to call populateFilters or renderAllContent here, onSnapshot will handle it
                     closeModal();
                 } catch (e) {
                     console.error("Error saving document: ", e);
@@ -1088,12 +1103,15 @@
             async function migrateLocalStorageToFirestore() {
                 const localStoragePosts = JSON.parse(localStorage.getItem('contentCowboyPosts'));
                 const localStorageCustomTitles = JSON.parse(localStorage.getItem('customWeeklyTitles'));
+                const localStorageWeekStartDay = localStorage.getItem('weekStartDay'); // Get local weekStartDay
 
                 const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
                 const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
+                const globalPreferencesDocRef = doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings'); // New ref
 
                 const firestorePostsSnapshot = await getDocs(postsCollectionRef);
                 const firestoreCustomTitlesDoc = await getDoc(customTitlesDocRef);
+                const firestoreGlobalPreferencesDoc = await getDoc(globalPreferencesDocRef); // New doc fetch
 
                 let migrated = false;
 
@@ -1114,8 +1132,32 @@
                     migrated = true;
                 }
 
+                // Migrate weekStartDay from localStorage to Firestore global preferences
+                if (localStorageWeekStartDay && !firestoreGlobalPreferencesDoc.exists()) {
+                    console.log("Migrating weekStartDay from localStorage to Firestore global preferences...");
+                    await setDoc(globalPreferencesDocRef, { weekStartDay: localStorageWeekStartDay }, { merge: true });
+                    localStorage.removeItem('weekStartDay'); // Clear local storage after migration
+                    migrated = true;
+                }
+                // Also, if filters were ever saved locally in the past (though not explicitly in previous versions of the code),
+                // you might consider a one-time migration for them too if needed.
+                // For this version, we assume filters default to 'All' if not in Firestore.
+
+
                 if (migrated) {
                     alert("Existing data migrated to cloud storage!");
+                }
+            }
+
+            // Function to update global preferences in Firestore
+            async function updateGlobalPreferences(newPrefs) {
+                try {
+                    const globalPreferencesDocRef = doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings');
+                    await setDoc(globalPreferencesDocRef, newPrefs, { merge: true });
+                    console.log("Global preferences updated in Firestore:", newPrefs);
+                } catch (e) {
+                    console.error("Error updating global preferences: ", e);
+                    alert("Error saving preferences. Check Firestore rules for globalPreferences.");
                 }
             }
 
@@ -1155,6 +1197,28 @@
                         alert("Error fetching custom titles. Please check your Firestore Security Rules.");
                     });
 
+                    // Set up real-time listener for global preferences
+                    onSnapshot(doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings'), (docSnapshot) => {
+                        if (docSnapshot.exists()) {
+                            globalPreferences = { ...globalPreferences, ...docSnapshot.data() }; // Merge with defaults
+                            console.log("Firestore: Global preferences received.", globalPreferences);
+                        } else {
+                            // If the document doesn't exist, create it with default values
+                            console.log("Firestore: Global preferences document does not exist. Setting defaults.");
+                            updateGlobalPreferences(globalPreferences); // Save defaults to Firestore
+                        }
+                        // Update UI elements immediately after preferences are loaded/updated
+                        platformFilter.value = globalPreferences.platformFilter;
+                        statusFilter.value = globalPreferences.statusFilter;
+                        weekStartDayFilter.value = globalPreferences.weekStartDay;
+                        currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay); // Recalculate week start based on global preference
+                        renderAllContent(); // Re-render to apply new preferences
+                    }, (error) => {
+                        console.error("Error listening to global preferences: ", error);
+                        alert("Error fetching global preferences. Please check your Firestore Security Rules for 'globalPreferences'.");
+                    });
+
+
                 } else {
                     // User is signed out or not yet signed in. Sign in anonymously.
                     // Added a small delay to ensure Firebase SDK is fully initialized before attempting sign-in
@@ -1179,7 +1243,7 @@
             // --- End Firebase Initialization and Listeners ---
 
 
-            // Apply dark mode preference on load
+            // Apply dark mode preference on load (still local)
             if (localStorage.getItem('darkMode') === 'enabled') {
                 document.documentElement.classList.add('dark');
                 darkModeToggle.checked = true;
@@ -1187,19 +1251,23 @@
                 darkModeToggle.checked = false;
             }
 
-            // Event Listeners
-            platformFilter.addEventListener('change', renderAllContent);
-            statusFilter.addEventListener('change', renderAllContent);
+            // Event Listeners for filters - now update Firestore
+            platformFilter.addEventListener('change', (e) => {
+                globalPreferences.platformFilter = e.target.value;
+                updateGlobalPreferences({ platformFilter: e.target.value });
+                // renderAllContent will be triggered by onSnapshot
+            });
+            statusFilter.addEventListener('change', (e) => {
+                globalPreferences.statusFilter = e.target.value;
+                updateGlobalPreferences({ statusFilter: e.target.value });
+                // renderAllContent will be triggered by onSnapshot
+            });
             darkModeToggle.addEventListener('change', toggleDarkMode);
 
             weekStartDayFilter.addEventListener('change', (e) => {
-                preferredWeekStartDay = e.target.value;
-                localStorage.setItem('weekStartDay', preferredWeekStartDay);
-                
-                const middleOfCurrentDisplayedWeek = new Date(currentWeekStartDate);
-                middleOfCurrentDisplayedWeek.setDate(middleOfCurrentDisplayedWeek.getDate() + 3);
-                currentWeekStartDate = getWeekStartDate(middleOfCurrentDisplayedWeek, preferredWeekStartDay);  
-                renderAllContent();
+                globalPreferences.weekStartDay = e.target.value;
+                updateGlobalPreferences({ weekStartDay: e.target.value });
+                // currentWeekStartDate will be updated by onSnapshot, then renderAllContent
             });
 
             addPostBtn.addEventListener('click', () => {
@@ -1289,11 +1357,16 @@
                     const customTitlesSnapshot = await getDoc(customTitlesDocRef);
                     const exportedCustomTitles = customTitlesSnapshot.exists() ? customTitlesSnapshot.data() : {};
 
+                    const globalPreferencesDocRef = doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings');
+                    const globalPreferencesSnapshot = await getDoc(globalPreferencesDocRef);
+                    const exportedGlobalPreferences = globalPreferencesSnapshot.exists() ? globalPreferencesSnapshot.data() : {};
+
+
                     const dataToExport = {
                         posts: exportedPosts,
                         customWeeklyTitles: exportedCustomTitles,
-                        darkMode: localStorage.getItem('darkMode'),
-                        weekStartDay: localStorage.getItem('weekStartDay')
+                        globalPreferences: exportedGlobalPreferences, // Include centralized preferences
+                        darkMode: localStorage.getItem('darkMode') // Still local
                     };
                     const jsonData = JSON.stringify(dataToExport, null, 2);
 
@@ -1360,6 +1433,14 @@
                                 await setDoc(customTitlesDocRef, {}); // Clear if no titles in import
                             }
 
+                            // Import global preferences
+                            const globalPreferencesDocRef = doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings');
+                            if (importedData.globalPreferences) {
+                                await setDoc(globalPreferencesDocRef, importedData.globalPreferences);
+                            } else {
+                                await setDoc(globalPreferencesDocRef, {}); // Clear if no global preferences in import
+                            }
+
                             // Import other settings (still in localStorage for now)
                             if (importedData.darkMode !== undefined) {
                                 localStorage.setItem('darkMode', importedData.darkMode);
@@ -1376,17 +1457,8 @@
                                 darkModeToggle.checked = false;
                             }
 
-                            if (importedData.weekStartDay !== undefined) {
-                                localStorage.setItem('weekStartDay', importedData.weekStartDay);
-                                preferredWeekStartDay = importedData.weekStartDay;
-                                weekStartDayFilter.value = preferredWeekStartDay;
-                                currentWeekStartDate = getWeekStartDate(new Date(), preferredWeekStartDay);
-                            } else {
-                                localStorage.removeItem('weekStartDay');
-                                preferredWeekStartDay = 'Monday';
-                                weekStartDayFilter.value = preferredWeekStartDay;
-                                currentWeekStartDate = getWeekStartDate(new Date(), preferredWeekStartDay);
-                            }
+                            // No need to set weekStartDay from importedData here, as it's handled by globalPreferences now.
+                            // The onSnapshot listener for globalPreferences will update the UI.
 
                             alert('Calendar data imported successfully!');
                             // onSnapshot listeners will trigger renderAllContent and populateFilters
