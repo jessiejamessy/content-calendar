@@ -3,903 +3,1427 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Odin Valhalla Guild Auction Tracker</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Content Cowboy Interactive Calendar</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Slackey&display=swap" rel="stylesheet">
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        // Updated Firebase SDK versions to 12.0.0 as per user's provided script
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration - INSERTED USER'S PROVIDED CONFIG HERE
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqOoWBpthRQBI7Xgi-co3-Wrf8jX_nPnY",
+            authDomain: "contentcalendar-10154.firebaseapp.com",
+            projectId: "contentcalendar-10154",
+            storageBucket: "contentcalendar-10154.firebasestorage.app",
+            messagingSenderId: "309580896666",
+            appId: "1:309580896666:web:9d987624d2efd644960223",
+            measurementId: "G-TCTW37KEQF"
+        };
+
+        // Define global variables for Firebase config and app ID
+        // We use firebaseConfig.projectId as the appId for consistency with Firestore paths
+        const appId = firebaseConfig.projectId;
+        // initialAuthToken is typically provided by the Canvas environment, keep as is.
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app); // Initialize analytics as requested
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Make Firebase instances globally accessible within the script scope
+        window.firebaseApp = app;
+        window.firebaseDb = db;
+        window.firebaseAuth = auth;
+        window.firebaseInitialAuthToken = initialAuthToken;
+        window.firebaseAppId = appId; // Make appId globally accessible
+        window.firebaseDoc = doc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseSetDoc = setDoc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseDeleteDoc = deleteDoc;
+        window.firebaseOnSnapshot = onSnapshot;
+        window.firebaseCollection = collection;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseSignInAnonymously = signInAnonymously;
+        window.firebaseSignInWithCustomToken = signInWithCustomToken;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
+    </script>
     <style>
-        /* Custom styles for Inter font and general body styling */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1a202c; /* Dark background */
-            color: #e2e8f0; /* Light text */
+            background-color: #f1f5f9; /* Slightly darker light background for better contrast */
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
-        /* Style for the table header to ensure good contrast */
-        th {
-            background-color: #2d3748; /* Slightly lighter dark for headers */
-            color: #cbd5e0;
-        }
-        /* Style for table rows */
-        tr:nth-child(even) {
-            background-color: #2d3748; /* Alternate row color */
-        }
-        tr:nth-child(odd) {
-            background-color: #1a202c; /* Default row color */
-        }
-        /* Input and select field styling */
-        input[type="text"], input[type="password"], select {
-            background-color: #2d3748;
-            border: 1px solid #4a5568;
-            color: #e2e8f0;
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.375rem; /* rounded-md */
+        .chart-container {
+            position: relative;
             width: 100%;
+            max-width: 450px;
+            margin-left: auto;
+            margin-right: auto;
+            /* Responsive height handled by Tailwind classes on the div itself */
         }
-        input[type="text"]:focus, input[type="password"]:focus, select:focus {
-            outline: none;
-            border-color: #63b3ed; /* Blue focus ring */
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Blue glow */
+        .day-column {
+            min-height: 250px; /* Reduced height for two weeks to fit better */
         }
-        /* Button styling */
-        button {
-            background-color: #4299e1; /* Blue button */
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem; /* rounded-lg */
-            font-weight: bold;
-            transition: background-color 0.2s ease-in-out;
+        .modal-bg {
+            background-color: rgba(0,0,0,0.5);
         }
-        button:hover {
-            background-color: #3182ce; /* Darker blue on hover */
+
+        /* Custom Brand Colors - Light Mode */
+        .text-brand-charcoal { color: #333333; }
+        .bg-brand-charcoal { background-color: #333333; }
+        .text-brand-soft-blue { color: #ADD8E6; }
+        .bg-brand-soft-blue { background-color: #ADD8E6; }
+        .text-brand-coral { color: #FF7F50; }
+        .bg-brand-coral { background-color: #FF7F50; }
+
+        /* Dark Mode Styles */
+        .dark {
+            background-color: #1a202c; /* Dark background for body */
+            color: #e2e8f0; /* Light text for body */
         }
-        /* Delete button specific styling */
-        .delete-btn {
-            background-color: #e53e3e; /* Red for delete */
-            padding: 0.4rem 0.8rem;
-            font-size: 0.875rem; /* text-sm */
-            border-radius: 0.375rem; /* rounded-md */
-            transition: background-color 0.2s ease-in-out;
+        .dark .text-slate-800 { color: #e2e8f0; }
+        .dark .text-slate-600 { color: #cbd5e1; } /* Light gray for secondary text */
+        .dark .bg-white { background-color: #2d3748; } /* Darker background for cards/sections */
+        .dark .bg-slate-200 { /* For platform tags */
+            background-color: #4a5568; /* Darker gray */
+            color: #e2e8f0;
         }
-        .delete-btn:hover {
-            background-color: #c53030; /* Darker red on hover */
+        /* Day column background in dark mode */
+        .dark .day-column {
+            background-color: #2d3748; /* Darker background for day columns */
         }
-        /* Message box styling */
-        .message-box {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #48bb78; /* Green for success */
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
+        /* Dark mode custom brand colors override */
+        .dark .text-brand-charcoal { color: #e2e8f0; }
+        .dark .bg-brand-charcoal { background-color: #1f2937; }
+        .dark .text-brand-soft-blue { color: #94a3b8; }
+        .dark .bg-brand-soft-blue { background-color: #334155; }
+        .dark .text-brand-coral { color: #fca5a5; }
+        .dark .bg-brand-coral { background-color: #be123c; }
+
+        /* Status colors in dark mode - keep them distinct but adjust for dark background */
+        .dark .bg-rose-200 { background-color: #991b1b; } /* Darker rose */
+        .dark .text-rose-800 { color: #fecaca; } /* Lighter rose text */
+        .dark .bg-amber-200 { background-color: #92400e; } /* Darker amber */
+        .dark .text-amber-800 { color: #fcd34d; } /* Lighter amber text */
+        .dark .bg-sky-200 { background-color: #0c4a6e; } /* Darker sky */
+        .dark .text-sky-800 { color: #bae6fd; } /* Lighter sky text */
+        .dark .bg-emerald-200 { background-color: #065f46; } /* Darker emerald for 'Posted' */
+        .dark .text-emerald-800 { color: #a7f3d0; } /* Lighter emerald text for 'Posted' */
+        /* New status color for Approval */
+        .bg-violet-200 { background-color: #e0cffc; } /* Light violet */
+        .text-violet-800 { color: #5b21b6; } /* Dark violet text */
+        .dark .bg-violet-200 { background-color: #6d28d9; } /* Darker violet for dark mode */
+        .dark .text-violet-800 { color: #d8b4fe; } /* Lighter violet text for dark mode */
+
+        /* Platform specific colors */
+        .bg-facebook { background-color: #1877F2; }
+        .text-facebook { color: #FFFFFF; }
+        .bg-instagram { background-color: #E4405F; }
+        .text-instagram { color: #FFFFFF; }
+        .bg-tiktok { background-color: #000000; }
+        .text-tiktok { color: #FFFFFF; }
+        .bg-blog { background-color: #FF5722; } /* Orange for Blog */
+        .text-blog { color: #FFFFFF; }
+        .bg-linkedin { background-color: #0A66C2; }
+        .text-linkedin { color: #FFFFFF; }
+        .bg-x { background-color: #000000; } /* Black for X (Twitter) */
+        .text-x { color: #FFFFFF; }
+        .bg-behance { background-color: #0057FF; } /* Blue for Behance */
+        .text-behance { color: #FFFFFF; }
+        .bg-youtube { background-color: #FF0000; } /* Red for YouTube */
+        .text-youtube { color: #FFFFFF; }
+
+        /* Dark mode platform colors - adjust for better visibility */
+        .dark .bg-facebook { background-color: #3b5998; }
+        .dark .bg-instagram { background-color: #C13584; }
+        .dark .bg-tiktok { background-color: #222222; }
+        .dark .bg-blog { background-color: #D32F2F; }
+        .dark .bg-linkedin { background-color: #0E76A8; }
+        .dark .bg-x { background-color: #222222; }
+        .dark .bg-behance { background-color: #3C69E7; }
+        .dark .bg-youtube { background-color: #CC0000; }
+
+
+        /* Dark mode toggle switch dot position */
+        #darkModeToggle:checked + div .dot {
+            transform: translateX(20px);
         }
-        .message-box.show {
-            opacity: 1;
+
+        /* Light Mode Day Column Backgrounds */
+        .day-column.light-mode-weekday {
+            background-color: #e0f2fe; /* A specific light blue for weekdays */
         }
-        .message-box.error {
-            background-color: #e53e3e; /* Red for error */
+        .day-column.light-mode-weekend {
+            background-color: #e0f7fa; /* A slightly different light blue for weekends */
         }
-        /* Specific styles for job allocation summary */
-        .job-summary-item {
-            padding: 0.75rem;
-            margin-bottom: 0.5rem;
-            border-radius: 0.375rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .job-summary-item.received {
-            background-color: #2f855a; /* Green-700 equivalent */
-        }
-        .job-summary-item.not-received {
-            background-color: #c53030; /* Red-700 equivalent */
-        }
-        /* Admin password input container */
-        #adminPasswordContainer {
-            display: none; /* Hidden by default */
-            margin-top: 1rem;
-            padding: 1rem;
-            background-color: #2d3748;
-            border-radius: 0.5rem;
+
+        /* Updated: Western Font for Main Title - Using 'Slackey' */
+        .western-font {
+            font-family: 'Slackey', cursive, sans-serif; /* Applied new font with fallbacks */
+            text-shadow: 2px 2px 3px rgba(0,0,0,0.4); /* Added a subtle shadow for pop */
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8">
+<body class="text-slate-800">
 
-    <div class="max-w-4xl w-full bg-gray-800 p-6 rounded-lg shadow-xl">
-        <h1 class="text-4xl font-extrabold text-center text-blue-400 mb-8">
-            Odin Valhalla Guild Auction Allocation Tracker
-        </h1>
+    <div class="container mx-auto p-4 md:p-8">
 
-        <!-- Admin Controls -->
-        <div class="mb-8 p-6 bg-gray-700 rounded-lg shadow-md text-center">
-            <h2 class="text-2xl font-bold text-blue-300 mb-4">Admin Access</h2>
-            <p class="text-sm text-gray-400 mb-4">
-                Note: This is a client-side only admin feature and is NOT secure.
-                Anyone with browser developer tools can bypass this.
-            </p>
-            <button id="adminLoginBtn"
-                    class="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 rounded-lg">
-                Admin Login
-            </button>
-            <button id="adminLogoutBtn" style="display:none;"
-                    class="px-6 py-3 bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded-lg ml-4">
-                Admin Logout
-            </button>
-            <p id="loggedInUserDisplay" class="text-sm text-green-400 mt-2" style="display:none;"></p>
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-brand-charcoal western-font">Content Cowboy Interactive Calendar</h1>
+            <p class="text-slate-600 mt-2 text-base md:text-lg">A dynamic view of your weekly content schedule.</p>
+        </header>
 
-            <!-- Admin Password Input -->
-            <div id="adminPasswordContainer" class="flex flex-col items-center">
-                <input type="text" id="adminUsernameInput" placeholder="Enter username"
-                       class="w-full max-w-xs mt-4 mb-2">
-                <input type="password" id="adminPasswordInput" placeholder="Enter password"
-                       class="w-full max-w-xs mb-2">
-                <button id="submitAdminPasswordBtn"
-                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-md text-sm">
-                    Submit
+        <div class="bg-white p-4 rounded-xl shadow-sm mb-8 sticky top-4 z-10">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
+                <div class="md:col-span-1">
+                    <h2 class="font-bold text-lg md:text-xl text-brand-charcoal">Filter Controls</h2>
+                </div>
+                <div class="md:col-span-1">
+                    <label for="platformFilter" class="block text-sm font-medium text-brand-charcoal">Platform</label>
+                    <select id="platformFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-800 dark:text-white dark:border-gray-600">
+                        <option>All Platforms</option>
+                    </select>
+                </div>
+                <div class="md:col-span-1">
+                    <label for="statusFilter" class="block text-sm font-medium text-brand-charcoal">Status</label>
+                    <select id="statusFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-800 dark:text-white dark:border-gray-600">
+                        <option>All Statuses</option>
+                        <option>To Do</option>
+                        <option>In Progress</option>
+                        <option>For Approval</option>
+                        <option>Scheduled</option>
+                        <option>Posted</option>
+                    </select>
+                </div>
+                <div class="md:col-span-1">
+                    <label for="weekStartDayFilter" class="block text-sm font-medium text-brand-charcoal">Week Starts On</label>
+                    <select id="weekStartDayFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-800 dark:text-white dark:border-gray-600">
+                        <option value="Monday">Monday</option>
+                        <option value="Sunday">Sunday</option>
+                    </select>
+                </div>
+                <div class="md:col-span-1 text-right order-first md:order-none flex flex-col items-end gap-2">
+                    <button id="addPostBtn" class="w-full md:w-auto bg-brand-coral hover:bg-coral-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105">
+                        Add New Post
+                    </button>
+                    <div id="adminControls" class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                        <button id="adminLoginBtn" class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105">
+                            Admin Login
+                        </button>
+                        <button id="adminLogoutBtn" class="w-full md:w-auto bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105 hidden">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+                <div class="md:col-span-1 flex justify-center md:justify-end items-center">
+                    <label for="darkModeToggle" class="flex items-center cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="darkModeToggle" class="sr-only">
+                            <div class="block bg-slate-600 w-14 h-8 rounded-full"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
+                        </div>
+                        <div class="ml-3 text-brand-charcoal font-medium">Dark Mode</div>
+                    </label>
+                </div>
+                <div class="md:col-span-4 flex items-center justify-end">
+                    <span id="loggedInUserDisplay" class="text-sm font-medium text-slate-600 dark:text-slate-400">Not Logged In</span>
+                    <span id="currentUserIdDisplay" class="text-sm font-medium text-slate-600 dark:text-slate-400 ml-4"></span>
+                </div>
+            </div>
+             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                <button id="exportDataBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105">
+                    Export Data
+                </button>
+                <input type="file" id="importFileInput" accept=".json" class="hidden">
+                <button id="importDataBtn" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105">
+                    Import Data
                 </button>
             </div>
         </div>
 
-        <!-- Member Management Section -->
-        <div class="mb-8 p-6 bg-gray-700 rounded-lg shadow-md" id="memberManagementSection">
-            <h2 class="text-2xl font-bold text-blue-300 mb-4">Manage Guild Members</h2>
-            <form id="memberForm" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                    <label for="memberName" class="block text-sm font-medium text-gray-300 mb-1">Member Name</label>
-                    <input type="text" id="memberName" name="memberName" required disabled
-                           placeholder="e.g., GuildMember01"
-                           class="mt-1 block w-full rounded-md shadow-sm">
-                </div>
-                <div>
-                    <label for="memberJob" class="block text-sm font-medium text-gray-300 mb-1">Job Specification</label>
-                    <select id="memberJob" name="memberJob" required disabled
-                            class="mt-1 block w-full rounded-md shadow-sm">
-                        <option value="">Select Job</option>
-                        <option value="Assassin">Assassin</option>
-                        <option value="Sniper">Sniper</option>
-                        <option value="Paladin">Paladin</option>
-                        <option value="Priest">Priest</option>
-                        <option value="Dark Wiz">Dark Wiz</option>
-                        <option value="Archmage">Archmage</option>
-                        <option value="Defender">Defender</option>
-                        <option value="Berserker">Berserker</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2 flex justify-end mt-4">
-                    <button type="submit" id="addMemberBtn" disabled
-                            class="px-6 py-3 bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 rounded-lg">
-                        Add Member
-                    </button>
-                </div>
-            </form>
+        <section id="week-navigation" class="bg-white p-4 rounded-xl shadow-sm mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <button id="prevWeekBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                &larr; Previous Week
+            </button>
+            <div class="text-lg md:text-xl font-semibold text-brand-charcoal" id="currentWeekDisplay"></div>
+            <button id="nextWeekBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                Next Week &rarr;
+            </button>
+        </section>
 
-            <div class="overflow-x-auto rounded-lg shadow-md">
-                <table class="min-w-full divide-y divide-gray-700">
-                    <thead class="bg-gray-700">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider rounded-tl-lg">
-                                Member Name
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                Job
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider rounded-tr-lg">
-                                Actions
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody id="memberTableBody" class="divide-y divide-gray-700">
-                        <!-- Member rows will be inserted here by JavaScript -->
-                    </tbody>
-                </table>
-                <div id="noMembersMessage" class="text-center py-8 text-gray-400 text-lg hidden">
-                    No members added yet. Add one above!
+        <section id="weekly-title-control" class="bg-white p-4 rounded-xl shadow-sm mb-8">
+            <h2 class="font-bold text-lg md:text-xl text-brand-charcoal mb-4">Customize Weekly Titles</h2>
+            <div class="flex flex-col sm:flex-row gap-4 items-center">
+                <input type="text" id="customWeeklyTitleInput" placeholder="Enter custom weekly title (e.g., Q3 Planning)"
+                        class="flex-grow mt-1 block w-full sm:w-auto border border-slate-300 rounded-md shadow-sm p-2
+                                focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600">
+                <button id="setCustomTitleBtn" class="w-full sm:w-auto bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                    Set Custom Title
+                </button>
+                <button id="clearCustomTitleBtn" class="w-full sm:w-auto bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
+                    Clear Custom Title
+                </button>
+            </div>
+        </section>
+        <section id="analytics" class="mb-8">
+            <h2 class="text-2xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">Analytics Overview</h2>
+            <p class="text-slate-600 text-center mb-6 text-base md:text-lg">This section provides a high-level summary of your content plan. The charts below are fully dynamic and will update automatically as you add, edit, or filter your content in the calendar grid, giving you immediate visual feedback on your strategy.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <h3 class="text-lg md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution by Platform</h3>
+                    <div class="chart-container h-[300px] sm:h-[350px]">
+                        <canvas id="platformChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <h3 class="text-lg md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status</h3>
+                    <div class="chart-container h-[300px] sm:h-[350px]">
+                        <canvas id="statusChart"></canvas>
+                    </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Form to Add New Allocation -->
-        <div class="mb-8 p-6 bg-gray-700 rounded-lg shadow-md" id="allocationFormSection">
-            <h2 class="text-2xl font-bold text-blue-300 mb-4">Add New Allocation</h2>
-            <form id="allocationForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label for="recipientName" class="block text-sm font-medium text-gray-300 mb-1">Recipient Name</label>
-                    <select id="recipientName" name="recipientName" required disabled
-                           class="mt-1 block w-full rounded-md shadow-sm">
-                        <option value="">Select Recipient</option>
-                        <!-- Options populated by JavaScript -->
-                    </select>
+        <main id="calendar">
+            <h2 class="text-2xl md:text-3xl font-bold text-brand-charcoal mb-2 text-center">Current Week Content</h2>
+            <p class="text-slate-600 text-center mb-2 text-sm md:text-base" id="current-week-planned-title"></p>
+            <p class="text-slate-600 text-center mb-6 text-base md:text-lg">This is your main workspace for the current week's planned content (To Do, In Progress, Scheduled, For Approval).</p>
+            <div id="current-week-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
                 </div>
-                <!-- Updated field for Skill Item Type -->
-                <div>
-                    <label for="skillItemType" class="block text-sm font-medium text-gray-300 mb-1">Skill Item Type</label>
-                    <select id="skillItemType" name="skillItemType" required disabled
-                            class="mt-1 block w-full rounded-md shadow-sm">
-                        <option value="">Select Skill Type</option>
-                        <option value="Skill Book">Skill Book</option>
-                        <option value="Skill Guide">Skill Guide</option>
-                        <option value="Skill Manual">Skill Manual</option>
-                    </select>
-                </div>
-                <!-- New field for Item Rarity -->
-                <div>
-                    <label for="itemRarity" class="block text-sm font-medium text-gray-300 mb-1">Rarity</label>
-                    <select id="itemRarity" name="itemRarity" required disabled
-                            class="mt-1 block w-full rounded-md shadow-sm">
-                        <option value="">Select Rarity</option>
-                        <option value="Common">Common</option>
-                        <option value="Uncommon">Uncommon</option>
-                        <option value="Rare">Rare</option>
-                        <option value="Epic">Epic</option>
-                        <option value="Legendary">Legendary</option>
-                    </select>
-                </div>
-                <!-- Existing field for Job Specification (now auto-populated) -->
-                <div>
-                    <label for="jobSpecification" class="block text-sm font-medium text-gray-300 mb-1">Job Specification</label>
-                    <select id="jobSpecification" name="jobSpecification" required disabled
-                            class="mt-1 block w-full rounded-md shadow-sm bg-gray-600 cursor-not-allowed">
-                        <option value="">Auto-filled from Recipient</option>
-                        <option value="Assassin">Assassin</option>
-                        <option value="Sniper">Sniper</option>
-                        <option value="Paladin">Paladin</option>
-                        <option value="Priest">Priest</option>
-                        <option value="Dark Wiz">Dark Wiz</option>
-                        <option value="Archmage">Archmage</option>
-                        <option value="Defender">Defender</option>
-                        <option value="Berserker">Berserker</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <!-- Existing field for Item Specification -->
-                <div>
-                    <label for="itemSpecification" class="block text-sm font-medium text-gray-300 mb-1">Item Specification</label>
-                    <input type="text" id="itemSpecification" name="itemSpecification" disabled
-                           placeholder="e.g., +5 ATK, Fire Resistance"
-                           class="mt-1 block w-full rounded-md shadow-sm">
-                </div>
-                <div class="md:col-span-3 flex justify-end mt-4">
-                    <button type="submit" id="addAllocationBtn" disabled
-                            class="px-6 py-3 bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-lg">
-                        Add Allocation
-                    </button>
-                </div>
-            </form>
-        </div>
+        </main>
 
-        <!-- Allocation List Table -->
-        <div class="overflow-x-auto rounded-lg shadow-md">
-            <h2 class="text-2xl font-bold text-blue-300 mb-4 px-6">Current Allocations</h2>
+        <section id="posted-daily-calendar" class="mt-8">
+            <h2 class="text-2xl md:text-3xl font-bold text-brand-charcoal mb-2 text-center">Posted Content by Day</h2>
+            <p class="text-slate-600 text-center mb-2 text-sm md:text-base" id="current-week-posted-title"></p>
+            <p class="text-slate-600 text-center mb-6 text-base md:text-lg">View posted content for each day of the current week.</p>
+            <div id="posted-daily-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
+                </div>
+        </section>
 
-            <!-- Filter by Job dropdown -->
-            <div class="mb-4 px-6">
-                <label for="filterJob" class="block text-sm font-medium text-gray-300 mb-1">Filter by Job:</label>
-                <select id="filterJob" class="mt-1 block w-full md:w-1/3 rounded-md shadow-sm">
-                    <option value="All">All Jobs</option>
-                    <option value="Assassin">Assassin</option>
-                    <option value="Sniper">Sniper</option>
-                    <option value="Paladin">Paladin</option>
-                    <option value="Priest">Priest</option>
-                    <option value="Dark Wiz">Dark Wiz</option>
-                    <option value="Archmage">Archmage</option>
-                    <option value="Defender">Defender</option>
-                    <option value="Berserker">Berserker</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-
-            <table class="min-w-full divide-y divide-gray-700">
-                <thead class="bg-gray-700">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider rounded-tl-lg">
-                            Recipient
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                            Skill Item Type
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                            Rarity
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                            Job Spec
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                            Item Spec
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                            Date
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                            Edited By
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider rounded-tr-lg">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody id="allocationTableBody" class="divide-y divide-gray-700">
-                    <!-- Allocation rows will be inserted here by JavaScript -->
-                </tbody>
-            </table>
-            <div id="noAllocationsMessage" class="text-center py-8 text-gray-400 text-lg hidden">
-                No allocations added yet. Start by adding one above!
-            </div>
-        </div>
-
-        <!-- Job Allocation Summary Section -->
-        <div class="mb-8 p-6 bg-gray-700 rounded-lg shadow-md mt-8">
-            <h2 class="text-2xl font-bold text-blue-300 mb-4">Job Allocation Summary</h2>
-            <div id="jobAllocationSummary" class="space-y-2">
-                <p class="text-gray-400 text-center" id="jobSummaryMessage">Select a specific job from the "Filter by Job" dropdown above to see its allocation summary.</p>
-            </div>
-        </div>
-
+        <section id="all-posted-content-section" class="mt-8">
+            <h2 class="text-2xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">All Posted Content (Archive)</h2>
+            <p class="text-slate-600 text-center mb-6 text-base md:text-lg">A consolidated view of all your published posts across all weeks. This section always shows all posted content.</p>
+            <div id="all-posted-content-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                </div>
+        </section>
     </div>
 
-    <!-- Message Box for notifications -->
-    <div id="messageBox" class="message-box"></div>
+    <div id="postModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-lg transform transition-all" id="modal-content">
+            <h2 id="modalTitle" class="text-2xl font-bold mb-6 text-brand-charcoal">Add New Content</h2>
+            <form id="postForm">
+                <input type="hidden" id="postId">
+                <div class="mb-4">
+                    <label for="contentTopic" class="block text-sm font-medium text-brand-charcoal">Content Topic</label>
+                    <input type="text" id="contentTopic" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" required>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="publishDate" class="block text-sm font-medium text-brand-charcoal">Publish Date</label>
+                        <input type="date" id="publishDate" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" required>
+                    </div>
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-brand-charcoal">Status</label>
+                        <select id="status" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600">
+                            <option>To Do</option>
+                            <option>In Progress</option>
+                            <option>For Approval</option>
+                            <option>Scheduled</option>
+                            <option>Posted</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="platforms" class="block text-sm font-medium text-brand-charcoal">Platforms (comma-separated)</label>
+                    <input type="text" id="platforms" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" placeholder="e.g., Facebook, Instagram" required>
+                </div>
+                <div class="mb-4">
+                    <label for="contentType" class="block text-sm font-medium text-brand-charcoal">Content Type</label>
+                    <input type="text" id="contentType" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" placeholder="e.g., Reel, Post" required>
+                </div>
+                <div class="mb-4">
+                    <label for="resources" class="block text-sm font-medium text-brand-charcoal">Resources (link or notes)</label>
+                    <input type="text" id="resources" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" placeholder="e.g., Google Drive link, design assets folder">
+                </div>
+                <div class="mb-6">
+                    <label for="outputLink" class="block text-sm font-medium text-brand-charcoal">Output Link (published content URL)</label>
+                    <input type="url" id="outputLink" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" placeholder="e.g., https://instagram.com/your-post-url">
+                </div>
+                <div class="mb-6">
+                    <label for="notes" class="block text-sm font-medium text-brand-charcoal">Notes</label>
+                    <textarea id="notes" rows="3" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600"></textarea>
+                </div>
+                <div class="flex justify-end gap-4">
+                    <button type="button" id="cancelBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg">Cancel</button>
+                    <button type="submit" id="saveBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg">Save Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="deleteConfirmModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-sm transform transition-all" id="delete-modal-content">
+            <h2 class="text-xl font-bold mb-4 text-brand-charcoal">Confirm Deletion</h2>
+            <p class="text-slate-600 mb-6">Are you sure you want to delete this post? This action cannot be undone.</p>
+            <div class="flex justify-end gap-4">
+                <button type="button" id="cancelDeleteBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg">Cancel</button>
+                <button type="button" id="confirmDeleteBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loginModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-sm transform transition-all" id="login-modal-content">
+            <h2 class="text-xl font-bold mb-4 text-brand-charcoal">Admin Login</h2>
+            <p class="text-slate-600 mb-4">Enter admin password to enable editing features.</p>
+            <div class="mb-4">
+                <label for="adminPassword" class="block text-sm font-medium text-brand-charcoal">Password</label>
+                <input type="password" id="adminPassword" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600">
+                <p id="loginError" class="text-red-500 text-sm mt-2 hidden">Incorrect password. Please try again.</p>
+            </div>
+            <div class="flex justify-end gap-4">
+                <button type="button" id="cancelLoginBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg">Cancel</button>
+                <button type="button" id="submitLoginBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg">Login</button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
-        // Get references to elements
-        const allocationForm = document.getElementById('allocationForm');
-        const recipientNameSelect = document.getElementById('recipientName');
-        const skillItemTypeSelect = document.getElementById('skillItemType');
-        const itemRaritySelect = document.getElementById('itemRarity');
-        const jobSpecificationSelect = document.getElementById('jobSpecification');
-        const itemSpecificationInput = document.getElementById('itemSpecification');
-        const addAllocationBtn = document.getElementById('addAllocationBtn');
-
-        const allocationTableBody = document.getElementById('allocationTableBody');
-        const noAllocationsMessage = document.getElementById('noAllocationsMessage');
-        const messageBox = document.getElementById('messageBox');
-        const filterJobSelect = document.getElementById('filterJob');
-
-        // Member Management Elements
-        const memberForm = document.getElementById('memberForm');
-        const memberNameInput = document.getElementById('memberName');
-        const memberJobSelect = document.getElementById('memberJob');
-        const addMemberBtn = document.getElementById('addMemberBtn');
-        const memberTableBody = document.getElementById('memberTableBody');
-        const noMembersMessage = document.getElementById('noMembersMessage');
-
-        // Admin Control Elements
-        const adminLoginBtn = document.getElementById('adminLoginBtn');
-        const adminLogoutBtn = document.getElementById('adminLogoutBtn');
-        const adminPasswordContainer = document.getElementById('adminPasswordContainer');
-        const adminUsernameInput = document.getElementById('adminUsernameInput'); // New: Username input
-        const adminPasswordInput = document.getElementById('adminPasswordInput');
-        const submitAdminPasswordBtn = document.getElementById('submitAdminPasswordBtn');
-        const loggedInUserDisplay = document.getElementById('loggedInUserDisplay'); // New: Display for logged-in user
-
-        // Job Allocation Summary Elements
-        const jobAllocationSummaryDiv = document.getElementById('jobAllocationSummary');
-        const jobSummaryMessage = document.getElementById('jobSummaryMessage');
-
-        // Local Storage Keys
-        const ALLOCATIONS_STORAGE_KEY = 'odinGuildAllocations';
-        const MEMBERS_STORAGE_KEY = 'odinGuildMembers';
-        const ADMIN_MODE_KEY = 'odinAdminMode';
-        const CURRENT_ADMIN_USER_KEY = 'odinCurrentAdminUser'; // New: Key for current admin user
-
-        // Data Arrays
-        let allocations = [];
-        let members = [];
-        let isAdminMode = false;
-        let currentAdminUser = null; // New: Stores the logged-in admin's username
-
-        // Hardcoded admin users (NOT SECURE for production)
-        const ADMIN_USERS = {
-            'Nyxz': 'admin123',
-            'Moon': 'admin123',
-            'Sada': 'admin123'
-        };
-
-        /**
-         * Displays a message box with a given message and type (success/error).
-         * @param {string} message - The message to display.
-         * @param {string} type - 'success' or 'error'.
-         */
-        function showMessageBox(message, type) {
-            messageBox.textContent = message;
-            messageBox.className = 'message-box show';
-            if (type === 'error') {
-                messageBox.classList.add('error');
-            } else {
-                messageBox.classList.remove('error');
+        // IMPORTANT FIRESTORE SECURITY RULES:
+        // To allow public read/write access for authenticated users (including anonymous ones)
+        // to the 'posts' and 'customWeeklyTitles' collections, you MUST set the following
+        // rules in your Firebase project's Firestore Database -> Rules section:
+        /*
+        rules_version = '2';
+        service cloud.firestore {
+          match /databases/{database}/documents {
+            // Allow read and write access to public data for any authenticated user
+            match /artifacts/{appId}/public/data/{collectionId}/{documentId} {
+              allow read, write: if request.auth != null;
             }
-
-            setTimeout(() => {
-                messageBox.classList.remove('show');
-            }, 3000);
+          }
         }
+        */
+        // Without these rules, you will get "Missing or insufficient permissions" errors.
 
-        /**
-         * Toggles the enabled/disabled state of admin-controlled elements.
-         * @param {boolean} enable - True to enable, false to disable.
-         * @param {string|null} username - The username of the logged-in admin, or null if logging out.
-         */
-        function toggleAdminControls(enable, username = null) {
-            // Member Management Form
-            memberNameInput.disabled = !enable;
-            memberJobSelect.disabled = !enable;
-            addMemberBtn.disabled = !enable;
-
-            // Allocation Form
-            recipientNameSelect.disabled = !enable;
-            skillItemTypeSelect.disabled = !enable;
-            itemRaritySelect.disabled = !enable;
-            itemSpecificationInput.disabled = !enable;
-            addAllocationBtn.disabled = !enable;
-
-            // Update current admin user
-            currentAdminUser = username;
-            localStorage.setItem(CURRENT_ADMIN_USER_KEY, username || ''); // Save username to local storage
-
-            // Display logged-in user
-            if (currentAdminUser) {
-                loggedInUserDisplay.textContent = `Logged in as: ${currentAdminUser}`;
-                loggedInUserDisplay.style.display = 'block';
-            } else {
-                loggedInUserDisplay.style.display = 'none';
-            }
-
-            // Delete buttons in tables (need to re-render to apply disabled state)
-            renderMembers();
-            renderAllocations();
-            renderJobAllocationSummary(); // Also update job summary for reset button state
-
-            // Admin buttons visibility
-            adminLoginBtn.style.display = enable ? 'none' : 'inline-block';
-            adminLogoutBtn.style.display = enable ? 'inline-block' : 'none';
-
-            // Hide password input container after successful login/logout
-            adminPasswordContainer.style.display = 'none';
-            adminUsernameInput.value = ''; // Clear username field
-            adminPasswordInput.value = ''; // Clear password field
-
-            // Save admin mode state
-            localStorage.setItem(ADMIN_MODE_KEY, enable ? 'true' : 'false');
-            isAdminMode = enable;
-        }
-
-        /* --- Admin Login/Logout Handlers --- */
-        adminLoginBtn.addEventListener('click', () => {
-            adminPasswordContainer.style.display = 'block'; // Show password input
-            adminUsernameInput.focus(); // Focus on the username input field
-        });
-
-        submitAdminPasswordBtn.addEventListener('click', () => {
-            const username = adminUsernameInput.value.trim();
-            const password = adminPasswordInput.value;
-
-            if (ADMIN_USERS[username] && ADMIN_USERS[username] === password) {
-                toggleAdminControls(true, username);
-                showMessageBox(`Admin mode activated! Welcome, ${username}.`, "success");
-            } else {
-                showMessageBox("Incorrect username or password.", "error");
-            }
-        });
-
-        adminLogoutBtn.addEventListener('click', () => {
-            toggleAdminControls(false, null); // Pass null for username when logging out
-            showMessageBox("Admin mode deactivated.", "success");
-        });
+        // IMPORTANT FIREBASE AUTHENTICATION SETTINGS:
+        // To fix "Error (auth/configuration-not-found)", you MUST enable "Anonymous"
+        // as a sign-in provider in your Firebase project's Authentication -> Sign-in method tab.
+        // Your application uses anonymous authentication to allow all users to read data.
 
 
-        /* --- Member Management Functions --- */
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Admin password (for client-side demo purposes only - NOT secure for production)
+            const ADMIN_PASSWORD = "contentcowboy123";
 
-        /**
-         * Saves the current members array to localStorage.
-         */
-        function saveMembers() {
-            try {
-                localStorage.setItem(MEMBERS_STORAGE_KEY, JSON.stringify(members));
-            } catch (e) {
-                console.error("Error saving members to localStorage:", e);
-                showMessageBox("Error saving member data. Please check browser storage settings.", "error");
-            }
-        }
+            // --- Firebase Globals (from script type="module" above) ---
+            const app = window.firebaseApp;
+            const db = window.firebaseDb;
+            const auth = window.firebaseAuth;
+            const initialAuthToken = window.firebaseInitialAuthToken;
+            const appId = window.firebaseAppId;
+            const doc = window.firebaseDoc;
+            const getDoc = window.firebaseGetDoc;
+            const setDoc = window.firebaseSetDoc;
+            const updateDoc = window.firebaseUpdateDoc;
+            const deleteDoc = window.firebaseDeleteDoc;
+            const onSnapshot = window.firebaseOnSnapshot;
+            const collection = window.firebaseCollection;
+            const query = window.firebaseQuery;
+            const where = window.firebaseWhere;
+            const addDoc = window.firebaseAddDoc;
+            const getDocs = window.firebaseGetDocs;
+            const signInAnonymously = window.firebaseSignInAnonymously;
+            const signInWithCustomToken = window.firebaseSignInWithCustomToken;
+            const onAuthStateChanged = window.firebaseOnAuthStateChanged;
+            // --- End Firebase Globals ---
 
-        /**
-         * Loads members from localStorage.
-         */
-        function loadMembers() {
-            try {
-                const storedMembers = localStorage.getItem(MEMBERS_STORAGE_KEY);
-                if (storedMembers) {
-                    members = JSON.parse(storedMembers);
-                }
-            } catch (e) {
-                console.error("Error loading members from localStorage:", e);
-                showMessageBox("Error loading saved member data. Starting with a fresh member list.", "error");
-                members = [];
-            }
-        }
+            let posts = []; // This will now be populated by Firestore
+            let customWeeklyTitles = {}; // This will now be populated by Firestore
+            let currentUserId = null;
+            let isAdminLoggedIn = false; // Initial state
 
-        /**
-         * Renders all members from the 'members' array into the member table.
-         */
-        function renderMembers() {
-            memberTableBody.innerHTML = '';
-            if (members.length === 0) {
-                noMembersMessage.classList.remove('hidden');
-            } else {
-                noMembersMessage.classList.add('hidden');
-                members.forEach((member, index) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">
-                            ${member.name}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                            ${member.job}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button onclick="deleteMember(${index})" class="delete-btn" ${isAdminMode ? '' : 'disabled'}>
-                                Delete
-                            </button>
-                        </td>
-                    `;
-                    memberTableBody.appendChild(row);
-                });
-            }
-            populateRecipientDropdown();
-        }
+            // UI Elements
+            const platformFilter = document.getElementById('platformFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            const weekStartDayFilter = document.getElementById('weekStartDayFilter');
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const currentWeekDisplay = document.getElementById('currentWeekDisplay');
+            const currentWeekPlannedTitle = document.getElementById('current-week-planned-title');
+            const currentWeekPostedTitle = document.getElementById('current-week-posted-title');
+            const prevWeekBtn = document.getElementById('prevWeekBtn');
+            const nextWeekBtn = document.getElementById('nextWeekBtn');
 
-        /**
-         * Deletes a member from the array and re-renders the member table.
-         * @param {number} index - The index of the member to delete.
-         */
-        function deleteMember(index) {
-            if (!isAdminMode) {
-                showMessageBox("Admin access required to delete members.", "error");
-                return;
-            }
-            if (index > -1 && index < members.length) {
-                const deletedMemberName = members[index].name;
-                members.splice(index, 1);
-                saveMembers();
-                renderMembers();
-                showMessageBox(`Member '${deletedMemberName}' deleted successfully!`, 'success');
+            const customWeeklyTitleInput = document.getElementById('customWeeklyTitleInput');
+            const setCustomTitleBtn = document.getElementById('setCustomTitleBtn');
+            const clearCustomTitleBtn = document.getElementById('clearCustomTitleBtn');
 
-                allocations = allocations.filter(alloc => alloc.recipientName !== deletedMemberName);
-                saveAllocations();
-                renderAllocations();
-                renderJobAllocationSummary();
-            }
-        }
+            const exportDataBtn = document.getElementById('exportDataBtn');
+            const importDataBtn = document.getElementById('importDataBtn');
+            const importFileInput = document.getElementById('importFileInput');
 
-        /**
-         * Populates the Recipient Name dropdown in the allocation form with current members.
-         */
-        function populateRecipientDropdown() {
-            recipientNameSelect.innerHTML = '<option value="">Select Recipient</option>';
-            members.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member.name;
-                option.textContent = member.name;
-                recipientNameSelect.appendChild(option);
-            });
-            jobSpecificationSelect.value = "";
-            jobSpecificationSelect.options[0].textContent = "Auto-filled from Recipient";
-        }
+            const modal = document.getElementById('postModal');
+            const modalContent = document.getElementById('modal-content');
+            const addPostBtn = document.getElementById('addPostBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const postForm = document.getElementById('postForm');
+            const modalTitle = document.getElementById('modalTitle');
+            const postIdInput = document.getElementById('postId');
+            const publishDateInputModal = document.getElementById('publishDate');
+            const platformsInputModal = document.getElementById('platforms');
+            const statusSelectModal = document.getElementById('status');
 
-        /**
-         * Handles the selection of a recipient to auto-fill job specification.
-         */
-        recipientNameSelect.addEventListener('change', () => {
-            const selectedRecipientName = recipientNameSelect.value;
-            const selectedMember = members.find(member => member.name === selectedRecipientName);
+            const deleteConfirmModal = document.getElementById('deleteConfirmModal');
+            const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            let postIdToDelete = null;
 
-            if (selectedMember) {
-                jobSpecificationSelect.value = selectedMember.job;
-            } else {
-                jobSpecificationSelect.value = "";
-                jobSpecificationSelect.options[0].textContent = "Auto-filled from Recipient";
-            }
-        });
+            const loginModal = document.getElementById('loginModal');
+            const adminLoginBtn = document.getElementById('adminLoginBtn');
+            const adminLogoutBtn = document.getElementById('adminLogoutBtn');
+            const cancelLoginBtn = document.getElementById('cancelLoginBtn');
+            const submitLoginBtn = document.getElementById('submitLoginBtn');
+            const adminPasswordInput = document.getElementById('adminPassword');
+            const loginError = document.getElementById('loginError');
+            const loggedInUserDisplay = document.getElementById('loggedInUserDisplay');
+            const currentUserIdDisplay = document.getElementById('currentUserIdDisplay');
 
+            let platformChart, statusChart;
 
-        /* --- Allocation Management Functions (Modified) --- */
-
-        /**
-         * Saves the current allocations array to localStorage.
-         */
-        function saveAllocations() {
-            try {
-                localStorage.setItem(ALLOCATIONS_STORAGE_KEY, JSON.stringify(allocations));
-            } catch (e) {
-                console.error("Error saving allocations to localStorage:", e);
-                showMessageBox("Error saving allocation data. Please check browser storage settings.", "error");
-            }
-        }
-
-        /**
-         * Loads allocations from localStorage.
-         */
-        function loadAllocations() {
-            try {
-                const storedAllocations = localStorage.getItem(ALLOCATIONS_STORAGE_KEY);
-                if (storedAllocations) {
-                    allocations = JSON.parse(storedAllocations);
-                }
-            } catch (e) {
-                console.error("Error loading allocations from localStorage:", e);
-                showMessageBox("Error loading saved allocation data. Starting with a fresh list.", "error");
-                allocations = [];
-            }
-        }
-
-        /**
-         * Deletes an allocation from the array and re-renders the table.
-         * @param {string} idToDelete - The unique ID of the allocation to delete.
-         */
-        function deleteAllocation(idToDelete) {
-            if (!isAdminMode) {
-                showMessageBox("Admin access required to delete allocations.", "error");
-                return;
-            }
-            const initialLength = allocations.length;
-            allocations = allocations.filter(alloc => alloc.id !== idToDelete);
-            if (allocations.length < initialLength) {
-                saveAllocations();
-                renderAllocations();
-                renderJobAllocationSummary();
-                showMessageBox('Allocation deleted successfully!', 'success');
-            } else {
-                showMessageBox('Allocation not found.', 'error');
-            }
-        }
-
-        /**
-         * Renders allocations into the table, optionally filtered by job.
-         */
-        function renderAllocations() {
-            allocationTableBody.innerHTML = '';
-            const selectedJob = filterJobSelect.value;
-
-            const filteredAllocations = allocations.filter(allocation => {
-                return selectedJob === 'All' || allocation.jobSpecification === selectedJob;
-            });
-
-            if (filteredAllocations.length === 0) {
-                noAllocationsMessage.classList.remove('hidden');
-                if (selectedJob !== 'All') {
-                    noAllocationsMessage.textContent = `No allocations found for '${selectedJob}'.`;
-                } else {
-                    noAllocationsMessage.textContent = 'No allocations added yet. Start by adding one above!';
-                }
-            } else {
-                noAllocationsMessage.classList.add('hidden');
-                filteredAllocations.forEach((allocation) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">
-                            ${allocation.recipientName}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                            ${allocation.skillItemType || 'N/A'}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                            ${allocation.itemRarity || 'N/A'}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                            ${allocation.jobSpecification || 'N/A'}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                            ${allocation.itemSpecification || 'N/A'}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                            ${allocation.date}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                            ${allocation.editedBy || 'N/A'}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <button onclick="deleteAllocation('${allocation.id}')" class="delete-btn" ${isAdminMode ? '' : 'disabled'}>
-                                Delete
-                            </button>
-                        </td>
-                    `;
-                    allocationTableBody.appendChild(row);
-                });
-            }
-        }
-
-        /* --- Job Allocation Summary Function --- */
-        /**
-         * Renders a summary of members for the selected job, indicating if they received an item.
-         */
-        function renderJobAllocationSummary() {
-            jobAllocationSummaryDiv.innerHTML = '';
-            const selectedJob = filterJobSelect.value;
-
-            if (selectedJob === 'All') {
-                jobAllocationSummaryDiv.appendChild(jobSummaryMessage);
-                jobSummaryMessage.classList.remove('hidden');
-                return;
-            } else {
-                jobSummaryMessage.classList.add('hidden');
-            }
-
-            const membersOfSelectedJob = members.filter(member => member.job === selectedJob);
-
-            if (membersOfSelectedJob.length === 0) {
-                const noMembersFound = document.createElement('p');
-                noMembersFound.className = 'text-gray-400 text-center';
-                noMembersFound.textContent = `No members found for the '${selectedJob}' job.`;
-                jobAllocationSummaryDiv.appendChild(noMembersFound);
-                return;
-            }
-
-            let allReceived = true;
-            membersOfSelectedJob.forEach(member => {
-                const receivedItem = allocations.some(alloc =>
-                    alloc.recipientName === member.name && alloc.jobSpecification === member.job
-                );
-
-                const itemDiv = document.createElement('div');
-                itemDiv.className = `job-summary-item ${receivedItem ? 'received' : 'not-received'}`;
-                itemDiv.innerHTML = `
-                    <span class="font-bold">${member.name} (${member.job})</span>
-                    <span>${receivedItem ? 'Received Item' : 'Did Not Receive Item'}</span>
-                `;
-                jobAllocationSummaryDiv.appendChild(itemDiv);
-
-                if (!receivedItem) {
-                    allReceived = false;
-                }
-            });
-
-            // Add notification and reset button if all members received an item
-            if (allReceived) {
-                const completionMessage = document.createElement('p');
-                completionMessage.className = 'text-green-400 font-bold text-center mt-4';
-                completionMessage.textContent = `All members of ${selectedJob} have received an item!`;
-                jobAllocationSummaryDiv.appendChild(completionMessage);
-
-                const resetButton = document.createElement('button');
-                resetButton.className = 'px-4 py-2 bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50 rounded-md mt-2 text-white';
-                resetButton.textContent = `Reset ${selectedJob} Allocations`;
-                resetButton.onclick = () => resetJobAllocations(selectedJob);
-                resetButton.disabled = !isAdminMode; // Disable if not in admin mode
-                jobAllocationSummaryDiv.appendChild(resetButton);
-            }
-        }
-
-        /**
-         * Resets all allocations for a specific job.
-         * @param {string} jobToReset - The job specification to reset allocations for.
-         */
-        function resetJobAllocations(jobToReset) {
-            if (!isAdminMode) {
-                showMessageBox("Admin access required to reset allocations.", "error");
-                return;
-            }
-            const originalAllocationCount = allocations.length;
-            allocations = allocations.filter(alloc => alloc.jobSpecification !== jobToReset);
-            if (allocations.length < originalAllocationCount) {
-                saveAllocations();
-                renderAllocations();
-                renderJobAllocationSummary();
-                showMessageBox(`Allocations for ${jobToReset} have been reset!`, 'success');
-            } else {
-                showMessageBox(`No allocations found for ${jobToReset} to reset.`, 'error');
-            }
-        }
-
-
-        /* --- Event Listeners and Initial Load --- */
-
-        // Member Form Submission
-        memberForm.addEventListener('submit', (event) => {
-            event.preventDefault();
-            if (!isAdminMode) {
-                showMessageBox("Admin access required to add members.", "error");
-                return;
-            }
-            const memberName = memberNameInput.value.trim();
-            const memberJob = memberJobSelect.value;
-
-            if (!memberName || memberJob === "") {
-                showMessageBox('Please enter a member name and select a job.', 'error');
-                return;
-            }
-
-            if (members.some(m => m.name.toLowerCase() === memberName.toLowerCase())) {
-                showMessageBox(`Member '${memberName}' already exists!`, 'error');
-                return;
-            }
-
-            members.push({ name: memberName, job: memberJob });
-            saveMembers();
-            renderMembers();
-            memberForm.reset();
-            showMessageBox(`Member '${memberName}' added successfully!`, 'success');
-            renderJobAllocationSummary();
-        });
-
-        // Allocation Form Submission
-        allocationForm.addEventListener('submit', (event) => {
-            event.preventDefault();
-            if (!isAdminMode) {
-                showMessageBox("Admin access required to add allocations.", "error");
-                return;
-            }
-
-            const recipientName = recipientNameSelect.value;
-            const skillItemType = skillItemTypeSelect.value;
-            const itemRarity = itemRaritySelect.value;
-            const jobSpecification = jobSpecificationSelect.value;
-            const itemSpecification = itemSpecificationInput.value.trim();
-
-            const currentDate = new Date().toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-
-            if (!recipientName || !skillItemType || !itemRarity) {
-                showMessageBox('Please fill in all required fields (Recipient Name, Skill Item Type, Rarity).', 'error');
-                return;
-            }
-
-            if (jobSpecification === "" || jobSpecification === "Select Job" || jobSpecification === "Auto-filled from Recipient") {
-                showMessageBox('Please select a Recipient to auto-fill Job Specification.', 'error');
-                return;
-            }
-
-            const newAllocation = {
-                id: crypto.randomUUID(),
-                recipientName,
-                skillItemType,
-                itemRarity,
-                jobSpecification,
-                itemSpecification,
-                date: currentDate,
-                editedBy: currentAdminUser // Store the current admin user
+            const statusColors = {
+                'To Do': 'bg-rose-200',
+                'In Progress': 'bg-amber-200',
+                'Scheduled': 'bg-sky-200',
+                'Posted': 'bg-emerald-200',
+                'For Approval': 'bg-violet-200',
             };
 
-            allocations.push(newAllocation);
-            saveAllocations();
-            renderAllocations();
-            renderJobAllocationSummary();
+            const statusTextColors = {
+                'To Do': 'text-rose-800',
+                'In Progress': 'text-amber-800',
+                'Scheduled': 'text-sky-800',
+                'Posted': 'text-emerald-800',
+                'For Approval': 'text-violet-800',
+            };
 
-            allocationForm.reset();
-            jobSpecificationSelect.value = "";
-            jobSpecificationSelect.options[0].textContent = "Auto-filled from Recipient";
-            showMessageBox('Allocation added successfully!', 'success');
-        });
+            const platformTagColors = {
+                'Facebook': { bg: 'bg-facebook', text: 'text-facebook' },
+                'Instagram': { bg: 'bg-instagram', text: 'text-instagram' },
+                'TikTok': { bg: 'bg-tiktok', text: 'text-tiktok' },
+                'Blog': { bg: 'bg-blog', text: 'text-blog' },
+                'LinkedIn': { bg: 'bg-linkedin', text: 'text-linkedin' },
+                'X': { bg: 'bg-x', text: 'text-x' },
+                'Behance': { bg: 'bg-behance', text: 'text-behance' },
+                'YouTube': { bg: 'bg-youtube', text: 'text-youtube' },
+                'default': { bg: 'bg-slate-200', text: 'text-slate-700' }
+            };
 
-        // Event listener for the filter dropdown
-        filterJobSelect.addEventListener('change', () => {
-            renderAllocations();
-            renderJobAllocationSummary();
-        });
-
-        // Initial load and render when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            loadMembers();
-            renderMembers();
-            loadAllocations();
-            renderAllocations();
-            renderJobAllocationSummary();
-
-            // Load current admin user from local storage
-            const storedAdminUser = localStorage.getItem(CURRENT_ADMIN_USER_KEY);
-            const storedAdminMode = localStorage.getItem(ADMIN_MODE_KEY);
-
-            if (storedAdminMode === 'true' && storedAdminUser && ADMIN_USERS[storedAdminUser]) {
-                toggleAdminControls(true, storedAdminUser);
-            } else {
-                toggleAdminControls(false, null);
+            function getChartColors(isDarkMode) {
+                if (isDarkMode) {
+                    return {
+                        platforms: ['#94a3b8', '#fca5a5', '#e2e8f0', '#a78bfa', '#fbcfe8', '#f87171', '#c4b5fd', '#60a5fa'],
+                        statuses: {
+                            'To Do': '#fca5a5',
+                            'In Progress': '#94a3b8',
+                            'Scheduled': '#e2e8f0',
+                            'Posted': '#a7f3d0',
+                            'For Approval': '#d8b4fe'
+                        }
+                    };
+                } else {
+                    return {
+                        platforms: ['#ADD8E6', '#FF7F50', '#333333', '#6366f1', '#ec4899', '#ef4444', '#8b5cf6', '#3b82f6'],
+                        statuses: {
+                            'To Do': '#FF7F50',
+                            'In Progress': '#ADD8E6',
+                            'Scheduled': '#333333',
+                            'Posted': '#10b981',
+                            'For Approval': '#5b21b6'
+                        }
+                    };
+                }
             }
+
+            let preferredWeekStartDay = localStorage.getItem('weekStartDay') || 'Monday';
+            weekStartDayFilter.value = preferredWeekStartDay;
+
+            let currentWeekStartDate = getWeekStartDate(new Date(), preferredWeekStartDay);
+
+            function getWeekStartDate(d, startDayName) {
+                d = new Date(d);
+                d.setHours(0, 0, 0, 0);
+                const day = d.getDay();
+                let diff = 0;
+
+                if (startDayName === 'Monday') {
+                    diff = d.getDate() - day + (day === 0 ? -6 : 1);
+                } else {
+                    diff = d.getDate() - day;
+                }
+                const newDate = new Date(d.setDate(diff));
+                newDate.setHours(0, 0, 0, 0);
+                return newDate;
+            }
+
+            function formatDate(date) {
+                return date.toISOString().split('T')[0];
+            }
+
+            function getWeekRangeText(date) {
+                const start = getWeekStartDate(new Date(date), preferredWeekStartDay);
+                const end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                const options = { month: 'long', day: 'numeric', year: 'numeric' };
+                return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
+            }
+
+            function getCurrentWeekId() {
+                const weekStartDateFormatted = formatDate(currentWeekStartDate);
+                return `${weekStartDateFormatted}-${preferredWeekStartDay}Start`;
+            }
+
+            function getOrderedDaysOfWeek(startDayName) {
+                const allDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                if (startDayName === 'Monday') {
+                    return [...allDays.slice(1), allDays[0]];
+                }
+                return allDays;
+            }
+
+            function createPostCard(post) {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow relative';
+                card.dataset.id = post.id;
+
+                const platformsHtml = post.platforms.map(p => {
+                    const colors = platformTagColors[p] || platformTagColors['default'];
+                    return `<span class="inline-block ${colors.bg} ${colors.text} text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">${p}</span>`;
+                }).join('');
+
+                card.innerHTML = `
+                    <h4 class="font-bold text-brand-charcoal mb-2">${post.topic}</h4>
+                    <div class="mb-3">${platformsHtml}</div>
+                    <p class="text-sm text-slate-600 mb-3"><strong>Type:</strong> ${post.type}</p>
+                    <div class="text-sm font-semibold inline-flex items-center px-3 py-1 rounded-full ${statusColors[post.status]} ${statusTextColors[post.status]}">
+                        ${post.status}
+                    </div>
+                    ${post.resources ? `<p class="text-sm text-slate-600 mt-2"><strong>Resources:</strong> <a href="${post.resources}" target="_blank" class="text-blue-500 hover:underline">${post.resources.length > 30 ? post.resources.substring(0, 27) + '...' : post.resources}</a></p>` : ''}
+                    ${post.outputLink && post.status === 'Posted' ? `<p class="text-sm mt-2"><button onclick="window.open('${post.outputLink}', '_blank')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-full text-xs transition-colors">View Post</button></p>` : ''}
+                    ${isAdminLoggedIn ? `
+                    <button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 delete-post-btn" data-id="${post.id}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    ` : ''}
+                `;
+                card.addEventListener('click', (e) => {
+                    if (!e.target.closest('.delete-post-btn')) {
+                        if (isAdminLoggedIn) {
+                            openModal(post);
+                        } else {
+                            showLoginModal();
+                        }
+                    }
+                });
+                if (isAdminLoggedIn) {
+                    card.querySelector('.delete-post-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showDeleteConfirm(post.id);
+                    });
+                }
+                return card;
+            }
+
+            function showDeleteConfirm(id) {
+                postIdToDelete = id;
+                deleteConfirmModal.classList.remove('hidden');
+                deleteConfirmModal.classList.add('flex');
+            }
+
+            function hideDeleteConfirm() {
+                deleteConfirmModal.classList.add('hidden');
+                deleteConfirmModal.classList.remove('flex');
+                postIdToDelete = null;
+            }
+
+            async function deletePost() {
+                if (postIdToDelete !== null) {
+                    try {
+                        const postRef = doc(db, `artifacts/${appId}/public/data/posts`, String(postIdToDelete));
+                        await deleteDoc(postRef);
+                        // onSnapshot listener will handle re-rendering
+                        hideDeleteConfirm();
+                    } catch (e) {
+                        console.error("Error deleting document: ", e);
+                        alert("Error deleting post.");
+                    }
+                }
+            }
+
+            function getFilteredPosts() {
+                const selectedPlatform = platformFilter.value;
+                const selectedStatus = statusFilter.value;
+
+                const weekStart = new Date(currentWeekStartDate);
+                weekStart.setHours(0, 0, 0, 0);
+
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekStart.getDate() + 7);
+                weekEnd.setHours(0, 0, 0, 0);
+
+                const allPostsFilteredByPlatform = posts.filter(post => {
+                    return selectedPlatform === 'All Platforms' || (post.platforms && post.platforms.includes(selectedPlatform));
+                });
+
+                let currentWeekNonPosted = allPostsFilteredByPlatform.filter(post =>
+                    post.status !== 'Posted' &&
+                    new Date(post.publishDate).setHours(0,0,0,0) >= weekStart.getTime() &&
+                    new Date(post.publishDate).setHours(0,0,0,0) < weekEnd.getTime()
+                );
+                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
+                    currentWeekNonPosted = currentWeekNonPosted.filter(post => post.status === selectedStatus);
+                }
+
+                let currentWeekPostedByDay = allPostsFilteredByPlatform.filter(post =>
+                    post.status === 'Posted' &&
+                    new Date(post.publishDate).setHours(0,0,0,0) >= weekStart.getTime() &&
+                    new Date(post.publishDate).setHours(0,0,0,0) < weekEnd.getTime()
+                );
+                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
+                    currentWeekPostedByDay = [];
+                }
+
+                let allTimePosted = posts.filter(post => post.status === 'Posted');
+                if (selectedPlatform !== 'All Platforms') {
+                    allTimePosted = allTimePosted.filter(post => (post.platforms && post.platforms.includes(selectedPlatform)));
+                }
+                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
+                    allTimePosted = [];
+                }
+                
+                return {
+                    currentWeekNonPosted: currentWeekNonPosted,
+                    currentWeekPostedByDay: currentWeekPostedByDay,
+                    allTimePosted: allTimePosted
+                };
+            }
+
+            function renderAllContent() {
+                const orderedDays = getOrderedDaysOfWeek(preferredWeekStartDay);
+                const currentWeekRangeText = getWeekRangeText(currentWeekStartDate);
+                const weekId = getCurrentWeekId();
+                const isDarkMode = document.documentElement.classList.contains('dark');
+
+                const customTitle = customWeeklyTitles[weekId];
+                if (customTitle) {
+                    currentWeekPlannedTitle.textContent = customTitle;
+                    currentWeekPostedTitle.textContent = customTitle;
+                    customWeeklyTitleInput.value = customTitle;
+                } else {
+                    currentWeekPlannedTitle.textContent = currentWeekRangeText;
+                    currentWeekPostedTitle.textContent = currentWeekRangeText;
+                    customWeeklyTitleInput.value = '';
+                }
+                
+                currentWeekDisplay.textContent = currentWeekRangeText;
+                currentUserIdDisplay.textContent = currentUserId ? `User ID: ${currentUserId}` : '';
+
+
+                const currentWeekGrid = document.getElementById('current-week-grid');
+                currentWeekGrid.innerHTML = '';
+                const postedDailyGrid = document.getElementById('posted-daily-grid');
+                postedDailyGrid.innerHTML = '';
+                const allPostedContentContainer = document.getElementById('all-posted-content-container');
+                allPostedContentContainer.innerHTML = '';
+
+                for (let i = 0; i < 7; i++) {
+                    const dayColumn = document.createElement('div');
+                    dayColumn.id = `current-week-day-column-${i}`;
+                    
+                    let dayClasses = `rounded-lg p-4 day-column`;
+                    if (isDarkMode) {
+                        dayClasses += ` dark:bg-gray-700`;
+                        if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
+                            dayClasses += ` dark:bg-gray-800`;
+                        }
+                    } else {
+                        dayClasses += ` light-mode-weekday`;
+                        if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
+                            dayClasses += ` light-mode-weekend`;
+                        }
+                    }
+                    dayColumn.className = dayClasses;
+
+                    dayColumn.innerHTML = `<h3 class="font-bold text-xl md:text-2xl mb-4 text-center text-brand-charcoal">${orderedDays[i]}</h3><div id="current-week-day-content-${i}" class="space-y-4"></div>`;
+                    currentWeekGrid.appendChild(dayColumn);
+                }
+
+                for (let i = 0; i < 7; i++) {
+                    const dayColumn = document.createElement('div');
+                    dayColumn.id = `posted-daily-day-column-${i}`;
+                    
+                    let dayClasses = `rounded-lg p-4 day-column`;
+                    if (isDarkMode) {
+                        dayClasses += ` dark:bg-gray-700`;
+                        if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
+                            dayClasses += ` dark:bg-gray-800`;
+                        }
+                    } else {
+                        dayClasses += ` light-mode-weekday`;
+                        if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
+                            dayClasses += ` light-mode-weekend`;
+                        }
+                    }
+                    dayColumn.className = dayClasses;
+
+                    dayColumn.innerHTML = `<h3 class="font-bold text-xl md:text-2xl mb-4 text-center text-brand-charcoal">${orderedDays[i]}</h3><div id="posted-daily-day-content-${i}" class="space-y-4"></div>`;
+                    postedDailyGrid.appendChild(dayColumn);
+                }
+
+                const { currentWeekNonPosted, currentWeekPostedByDay, allTimePosted } = getFilteredPosts();
+
+                currentWeekNonPosted.forEach(post => {
+                    const postDate = new Date(post.publishDate);
+                    postDate.setHours(0,0,0,0);
+                    
+                    const startOfWeekOfPost = getWeekStartDate(postDate, preferredWeekStartDay);
+                    const diffTime = postDate.getTime() - startOfWeekOfPost.getTime();
+                    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                    const container = document.getElementById(`current-week-day-content-${diffDays}`);
+                    if (container) {
+                        container.appendChild(createPostCard(post));
+                    }
+                });
+
+                currentWeekPostedByDay.forEach(post => {
+                    const postDate = new Date(post.publishDate);
+                    postDate.setHours(0,0,0,0);
+                    
+                    const startOfWeekOfPost = getWeekStartDate(postDate, preferredWeekStartDay);
+                    const diffTime = postDate.getTime() - startOfWeekOfPost.getTime();
+                    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                    const container = document.getElementById(`posted-daily-day-content-${diffDays}`);
+                    if (container) {
+                        container.appendChild(createPostCard(post));
+                    }
+                });
+
+                allTimePosted.forEach(post => {
+                    if (allPostedContentContainer) {
+                        allPostedContentContainer.appendChild(createPostCard(post));
+                    }
+                });
+
+                const allVisiblePostsForCharts = [...currentWeekNonPosted, ...currentWeekPostedByDay, ...allTimePosted];
+                renderCharts(allVisiblePostsForCharts);
+                updateAdminUI();
+            }
+
+            function renderCharts(data) {
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                const currentChartColors = getChartColors(isDarkMode);
+
+                const platformCounts = {};
+                data.forEach(post => {
+                    if (post.platforms) {
+                        post.platforms.forEach(p => {
+                            platformCounts[p] = (platformCounts[p] || 0) + 1;
+                        });
+                    }
+                });
+
+                const statusCounts = { 'To Do': 0, 'In Progress': 0, 'For Approval': 0, 'Scheduled': 0, 'Posted': 0 };
+                data.forEach(post => {
+                    if (statusCounts.hasOwnProperty(post.status)) {
+                        statusCounts[post.status]++;
+                    }
+                });
+
+                const platformCtx = document.getElementById('platformChart').getContext('2d');
+                if(platformChart) platformChart.destroy();
+                platformChart = new Chart(platformCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(platformCounts),
+                        datasets: [{
+                            data: Object.values(platformCounts),
+                            backgroundColor: currentChartColors.platforms,
+                            borderColor: isDarkMode ? '#2d3748' : '#fff',
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: isDarkMode ? '#e2e8f0' : '#333333'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                const statusCtx = document.getElementById('statusChart').getContext('2d');
+                if(statusChart) statusChart.destroy();
+                statusChart = new Chart(statusCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(statusCounts),
+                        datasets: [{
+                            label: 'Number of Posts',
+                            data: Object.values(statusCounts),
+                            backgroundColor: Object.values(currentChartColors.statuses),
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1,
+                                    color: isDarkMode ? '#e2e8f0' : '#333333'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: isDarkMode ? '#e2e8f0' : '#333333'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            async function populateFilters() {
+                // Fetch all posts to get all unique platforms
+                try {
+                    const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
+                    const querySnapshot = await getDocs(postsCollectionRef);
+                    const allPlatforms = new Set();
+                    querySnapshot.forEach(doc => {
+                        const post = doc.data();
+                        if (post.platforms) {
+                            post.platforms.forEach(pf => allPlatforms.add(pf));
+                        }
+                    });
+
+                    platformFilter.innerHTML = '<option>All Platforms</option>';
+                    Array.from(allPlatforms).sort().forEach(pf => {
+                        const option = document.createElement('option');
+                        option.textContent = pf;
+                        platformFilter.appendChild(option);
+                    });
+                } catch (e) {
+                    console.error("Error populating filters:", e);
+                }
+            }
+
+            function openModal(post = null) {
+                postForm.reset();
+                if (post) {
+                    modalTitle.textContent = 'Edit Content';
+                    postIdInput.value = post.id;
+                    document.getElementById('contentTopic').value = post.topic;
+                    publishDateInputModal.value = post.publishDate;
+                    statusSelectModal.value = post.status;
+                    platformsInputModal.value = post.platforms ? post.platforms.join(', ') : '';
+                    document.getElementById('contentType').value = post.type;
+                    document.getElementById('resources').value = post.resources || '';
+                    document.getElementById('outputLink').value = post.outputLink || '';
+                    document.getElementById('notes').value = post.notes || '';
+                } else {
+                    modalTitle.textContent = 'Add New Content';
+                    postIdInput.value = '';
+                    publishDateInputModal.value = formatDate(new Date());  
+                    statusSelectModal.value = 'To Do';
+                }
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                setTimeout(() => modalContent.classList.add('scale-100'), 10);
+            }
+
+            function closeModal() {
+                modalContent.classList.remove('scale-100');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }, 300);
+            }
+
+            async function handleFormSubmit(e) {
+                e.preventDefault();
+                const id = postIdInput.value;
+                const publishDate = publishDateInputModal.value;
+
+                const newPostData = {
+                    topic: document.getElementById('contentTopic').value,
+                    publishDate: publishDate,
+                    status: statusSelectModal.value,
+                    platforms: platformsInputModal.value.split(',').map(p => p.trim()).filter(p => p !== ''),
+                    type: document.getElementById('contentType').value,
+                    resources: document.getElementById('resources').value,
+                    outputLink: document.getElementById('outputLink').value,
+                    notes: document.getElementById('notes').value,
+                };
+
+                try {
+                    if (id) {
+                        const postRef = doc(db, `artifacts/${appId}/public/data/posts`, String(id)); // Ensure ID is string
+                        await setDoc(postRef, newPostData, { merge: true }); // Use setDoc with merge for update
+                    } else {
+                        // Firestore automatically generates an ID if you use addDoc
+                        const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), newPostData);
+                        // newPostData.id = docRef.id; // This line is commented out, but onSnapshot will re-fetch anyway.
+                    }
+                    populateFilters(); // Re-populate platform filter dropdown
+                    statusFilter.value = 'All Statuses'; // Reset status filter to "All Statuses"
+                    closeModal();
+                } catch (e) {
+                    console.error("Error saving document: ", e);
+                    alert("Error saving post.");
+                }
+            }
+
+            function toggleDarkMode() {
+                document.documentElement.classList.toggle('dark');
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+                renderAllContent();
+            }
+
+            function showLoginModal() {
+                adminPasswordInput.value = '';
+                loginError.classList.add('hidden');
+                loginModal.classList.remove('hidden');
+                loginModal.classList.add('flex');
+            }
+
+            function hideLoginModal() {
+                loginModal.classList.add('hidden');
+                loginModal.classList.remove('flex');
+            }
+
+            async function login() {
+                if (adminPasswordInput.value === ADMIN_PASSWORD) {
+                    // In a real app, this would involve a server generating a custom token
+                    // For this client-side demo, we just set isAdminLoggedIn directly
+                    // and rely on Firebase's anonymous auth for read access.
+                    isAdminLoggedIn = true;
+                    localStorage.setItem('isAdminLoggedIn', 'true');
+                    hideLoginModal();
+                    renderAllContent(); // Re-render to show editable elements
+                } else {
+                    loginError.classList.remove('hidden');
+                }
+            }
+
+            function logout() {
+                isAdminLoggedIn = false;
+                localStorage.setItem('isAdminLoggedIn', 'false');
+                renderAllContent();
+            }
+
+            function updateAdminUI() {
+                if (isAdminLoggedIn) {
+                    addPostBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    addPostBtn.disabled = false;
+                    exportDataBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    exportDataBtn.disabled = false;
+                    importDataBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    importDataBtn.disabled = false;
+                    setCustomTitleBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    setCustomTitleBtn.disabled = false;
+                    clearCustomTitleBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    clearCustomTitleBtn.disabled = false;
+
+                    adminLoginBtn.classList.add('hidden');
+                    adminLogoutBtn.classList.remove('hidden');
+                    loggedInUserDisplay.textContent = 'Logged in as Admin';
+                } else {
+                    addPostBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    addPostBtn.disabled = true;
+                    exportDataBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    exportDataBtn.disabled = true;
+                    importDataBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    importDataBtn.disabled = true;
+                    setCustomTitleBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    setCustomTitleBtn.disabled = true;
+                    clearCustomTitleBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    clearCustomTitleBtn.disabled = true;
+
+                    adminLoginBtn.classList.remove('hidden');
+                    adminLogoutBtn.classList.add('hidden');
+                    loggedInUserDisplay.textContent = 'Not Logged In';
+                }
+            }
+
+            // Data Migration from LocalStorage to Firestore
+            async function migrateLocalStorageToFirestore() {
+                const localStoragePosts = JSON.parse(localStorage.getItem('contentCowboyPosts'));
+                const localStorageCustomTitles = JSON.parse(localStorage.getItem('customWeeklyTitles'));
+
+                const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
+                const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
+
+                const firestorePostsSnapshot = await getDocs(postsCollectionRef);
+                const firestoreCustomTitlesDoc = await getDoc(customTitlesDocRef);
+
+                let migrated = false;
+
+                if (localStoragePosts && localStoragePosts.length > 0 && firestorePostsSnapshot.empty) {
+                    console.log("Migrating posts from localStorage to Firestore...");
+                    for (const post of localStoragePosts) {
+                        // Use setDoc with the post.id as the document ID
+                        await setDoc(doc(postsCollectionRef, String(post.id)), post);
+                    }
+                    localStorage.removeItem('contentCowboyPosts'); // Clear local storage after migration
+                    migrated = true;
+                }
+
+                if (localStorageCustomTitles && Object.keys(localStorageCustomTitles).length > 0 && !firestoreCustomTitlesDoc.exists()) {
+                    console.log("Migrating custom weekly titles from localStorage to Firestore...");
+                    await setDoc(customTitlesDocRef, localStorageCustomTitles);
+                    localStorage.removeItem('customWeeklyTitles'); // Clear local storage after migration
+                    migrated = true;
+                }
+
+                if (migrated) {
+                    alert("Existing data migrated to cloud storage!");
+                }
+            }
+
+            // --- Firebase Initialization and Listeners ---
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    currentUserIdDisplay.textContent = `User ID: ${currentUserId}`;
+
+                    // After authentication, perform data migration if necessary
+                    await migrateLocalStorageToFirestore();
+
+                    // Set up real-time listeners for posts
+                    onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), (snapshot) => {
+                        posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        renderAllContent();
+                        populateFilters(); // Re-populate filters whenever posts change
+                    }, (error) => {
+                        console.error("Error listening to posts: ", error);
+                        alert("Error fetching posts data. Please check your Firestore Security Rules.");
+                    });
+
+                    // Set up real-time listener for custom weekly titles
+                    onSnapshot(doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles'), (docSnapshot) => {
+                        if (docSnapshot.exists()) {
+                            customWeeklyTitles = docSnapshot.data();
+                        } else {
+                            customWeeklyTitles = {};
+                        }
+                        renderAllContent(); // Re-render to update titles
+                    }, (error) => {
+                        console.error("Error listening to custom titles: ", error);
+                        alert("Error fetching custom titles. Please check your Firestore Security Rules.");
+                    });
+
+                } else {
+                    // User is signed out or not yet signed in. Sign in anonymously.
+                    try {
+                        // Check if anonymous authentication is enabled in Firebase project
+                        // This is the most common cause of "auth/configuration-not-found"
+                        await signInAnonymously(auth);
+                    } catch (error) {
+                        console.error("Error signing in anonymously: ", error);
+                        if (error.code === 'auth/configuration-not-found') {
+                            alert("Authentication Error: Anonymous sign-in is not enabled. Please enable it in your Firebase project's Authentication -> Sign-in method tab.");
+                        } else {
+                            alert("Error signing in. Please check your internet connection or Firebase configuration.");
+                        }
+                    }
+                }
+            });
+            // --- End Firebase Initialization and Listeners ---
+
+
+            // Apply dark mode preference on load
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.documentElement.classList.add('dark');
+                darkModeToggle.checked = true;
+            } else {
+                darkModeToggle.checked = false;
+            }
+
+            // Event Listeners
+            platformFilter.addEventListener('change', renderAllContent);
+            statusFilter.addEventListener('change', renderAllContent);
+            darkModeToggle.addEventListener('change', toggleDarkMode);
+
+            weekStartDayFilter.addEventListener('change', (e) => {
+                preferredWeekStartDay = e.target.value;
+                localStorage.setItem('weekStartDay', preferredWeekStartDay);
+                
+                const middleOfCurrentDisplayedWeek = new Date(currentWeekStartDate);
+                middleOfCurrentDisplayedWeek.setDate(middleOfCurrentDisplayedWeek.getDate() + 3);
+                currentWeekStartDate = getWeekStartDate(middleOfCurrentDisplayedWeek, preferredWeekStartDay);  
+                renderAllContent();
+            });
+
+            addPostBtn.addEventListener('click', () => {
+                if (isAdminLoggedIn) {
+                    openModal();
+                } else {
+                    showLoginModal();
+                }
+            });
+            cancelBtn.addEventListener('click', closeModal);
+            postForm.addEventListener('submit', handleFormSubmit);
+            modal.addEventListener('click', (e) => {
+                if(e.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            prevWeekBtn.addEventListener('click', () => {
+                currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7);
+                renderAllContent();
+            });
+
+            nextWeekBtn.addEventListener('click', () => {
+                currentWeekStartDate.setDate(currentWeekStartDate.getDate() + 7);
+                renderAllContent();
+            });
+
+            // Custom Title Event Listeners
+            setCustomTitleBtn.addEventListener('click', async () => {
+                if (!isAdminLoggedIn) {
+                    showLoginModal();
+                    return;
+                }
+                const newTitle = customWeeklyTitleInput.value.trim();
+                const weekId = getCurrentWeekId();
+                try {
+                    const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
+                    if (newTitle) {
+                        await setDoc(customTitlesDocRef, { [weekId]: newTitle }, { merge: true });
+                    } else {
+                        // To delete a specific field in a document, you need to use updateDoc and FieldValue.delete()
+                        // However, FieldValue.delete() is not directly available in the global scope.
+                        // A simpler approach for a single document with multiple keys is to fetch, delete key, then set.
+                        const currentTitles = (await getDoc(customTitlesDocRef)).data() || {};
+                        delete currentTitles[weekId];
+                        await setDoc(customTitlesDocRef, currentTitles); // Overwrite with updated object
+                    }
+                    // onSnapshot will handle re-rendering
+                } catch (e) {
+                    console.error("Error setting custom title: ", e);
+                    alert("Error setting custom title.");
+                }
+            });
+
+            clearCustomTitleBtn.addEventListener('click', async () => {
+                if (!isAdminLoggedIn) {
+                    showLoginModal();
+                    return;
+                }
+                const weekId = getCurrentWeekId();
+                try {
+                    const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
+                    const currentTitles = (await getDoc(customTitlesDocRef)).data() || {};
+                    if (currentTitles[weekId]) {
+                        delete currentTitles[weekId];
+                        await setDoc(customTitlesDocRef, currentTitles); // Overwrite with updated object
+                    }
+                    // onSnapshot will handle re-rendering
+                } catch (e) {
+                    console.error("Error clearing custom title: ", e);
+                    alert("Error clearing custom title.");
+                }
+            });
+
+            // Export Data Function
+            exportDataBtn.addEventListener('click', async () => {
+                if (!isAdminLoggedIn) {
+                    showLoginModal();
+                    return;
+                }
+                try {
+                    const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
+                    const postsSnapshot = await getDocs(postsCollectionRef);
+                    const exportedPosts = postsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                    const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
+                    const customTitlesSnapshot = await getDoc(customTitlesDocRef);
+                    const exportedCustomTitles = customTitlesSnapshot.exists() ? customTitlesSnapshot.data() : {};
+
+                    const dataToExport = {
+                        posts: exportedPosts,
+                        customWeeklyTitles: exportedCustomTitles,
+                        darkMode: localStorage.getItem('darkMode'),
+                        weekStartDay: localStorage.getItem('weekStartDay')
+                    };
+                    const jsonData = JSON.stringify(dataToExport, null, 2);
+
+                    const blob = new Blob([jsonData], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `content_cowboy_data_${formatDate(new Date())}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    alert('Calendar data exported successfully!');
+                } catch (e) {
+                    console.error("Error exporting data: ", e);
+                    alert("Error exporting data.");
+                }
+            });
+
+            // Import Data Function
+            importDataBtn.addEventListener('click', () => {
+                if (!isAdminLoggedIn) {
+                    showLoginModal();
+                    return;
+                }
+                importFileInput.click();
+            });
+
+            importFileInput.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (!file) {
+                    event.target.value = '';  
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+
+                        if (importedData.posts && Array.isArray(importedData.posts)) {
+                            // Clear existing Firestore data before importing to avoid duplicates/conflicts
+                            const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
+                            const existingPosts = await getDocs(postsCollectionRef);
+                            const deletePromises = existingPosts.docs.map(d => deleteDoc(doc(postsCollectionRef, d.id)));
+                            await Promise.all(deletePromises);
+
+                            // Add imported posts
+                            for (const post of importedData.posts) {
+                                // Ensure post.id is used as document ID if it exists, otherwise Firestore generates one
+                                if (post.id) {
+                                    await setDoc(doc(postsCollectionRef, String(post.id)), post);
+                                } else {
+                                    await addDoc(postsCollectionRef, post);
+                                }
+                            }
+                            
+                            // Import custom weekly titles
+                            const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
+                            if (importedData.customWeeklyTitles) {
+                                await setDoc(customTitlesDocRef, importedData.customWeeklyTitles);
+                            } else {
+                                await setDoc(customTitlesDocRef, {}); // Clear if no titles in import
+                            }
+
+                            // Import other settings (still in localStorage for now)
+                            if (importedData.darkMode !== undefined) {
+                                localStorage.setItem('darkMode', importedData.darkMode);
+                                if (importedData.darkMode === 'enabled') {
+                                    document.documentElement.classList.add('dark');
+                                    darkModeToggle.checked = true;
+                                } else {
+                                    document.documentElement.classList.remove('dark');
+                                    darkModeToggle.checked = false;
+                                }
+                            } else {
+                                localStorage.removeItem('darkMode');
+                                document.documentElement.classList.remove('dark');
+                                darkModeToggle.checked = false;
+                            }
+
+                            if (importedData.weekStartDay !== undefined) {
+                                localStorage.setItem('weekStartDay', importedData.weekStartDay);
+                                preferredWeekStartDay = importedData.weekStartDay;
+                                weekStartDayFilter.value = preferredWeekStartDay;
+                                currentWeekStartDate = getWeekStartDate(new Date(), preferredWeekStartDay);
+                            } else {
+                                localStorage.removeItem('weekStartDay');
+                                preferredWeekStartDay = 'Monday';
+                                weekStartDayFilter.value = preferredWeekStartDay;
+                                currentWeekStartDate = getWeekStartDate(new Date(), preferredWeekStartDay);
+                            }
+
+                            alert('Calendar data imported successfully!');
+                            // onSnapshot listeners will trigger renderAllContent and populateFilters
+                        } else {
+                            alert('Invalid data file. Please select a valid Content Cowboy JSON export (expected "posts" array).');
+                        }
+                    } catch (error) {
+                        console.error('Error parsing or importing file:', error);
+                        alert('Error importing data. Please ensure the file is a valid JSON.');
+                    } finally {
+                        event.target.value = '';  
+                    }
+                };
+                reader.onerror = () => {
+                    alert('Failed to read file.');
+                    event.target.value = '';
+                };
+                reader.readAsText(file);
+            });
+
+            cancelDeleteBtn.addEventListener('click', hideDeleteConfirm);
+            confirmDeleteBtn.addEventListener('click', deletePost);
+            deleteConfirmModal.addEventListener('click', (e) => {
+                if(e.target === deleteConfirmModal) {
+                    hideDeleteConfirm();
+                }
+            });
+
+            adminLoginBtn.addEventListener('click', showLoginModal);
+            adminLogoutBtn.addEventListener('click', logout);
+            cancelLoginBtn.addEventListener('click', hideLoginModal);
+            submitLoginBtn.addEventListener('click', login);
+            adminPasswordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    login();
+                }
+            });
+            loginModal.addEventListener('click', (e) => {
+                if(e.target === loginModal) {
+                    hideLoginModal();
+                }
+            });
+
+            // Initial UI update (data will be loaded by onAuthStateChanged listener)
+            updateAdminUI();
         });
     </script>
 </body>
