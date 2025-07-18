@@ -623,7 +623,6 @@
                         ${post.status}
                     </div>
                     ${post.resources ? `<p class="text-sm text-slate-600 mt-2"><strong>Resources:</strong> <a href="${post.resources}" target="_blank" class="text-blue-500 hover:underline">${post.resources.length > 30 ? post.resources.substring(0, 27) + '...' : post.resources}</a></p>` : ''}
-                    ${post.outputLink && post.status === 'Posted' ? `<p class="text-sm mt-2"><button onclick="window.open('${post.outputLink}', '_blank')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-full text-xs transition-colors">View Post</button></p>` : ''}
                     ${isAdminLoggedIn ? `
                     <button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 delete-post-btn" data-id="${post.id}">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
