@@ -1124,6 +1124,7 @@
                 if (user) {
                     currentUserId = user.uid;
                     currentUserIdDisplay.textContent = `User ID: ${currentUserId}`;
+                    console.log("Firebase Auth: User is signed in. UID:", currentUserId);
 
                     // After authentication, perform data migration if necessary
                     await migrateLocalStorageToFirestore();
@@ -1131,6 +1132,7 @@
                     // Set up real-time listeners for posts
                     onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), (snapshot) => {
                         posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        console.log("Firestore: Posts data received.", posts);
                         renderAllContent();
                         populateFilters(); // Re-populate filters whenever posts change
                     }, (error) => {
@@ -1142,8 +1144,10 @@
                     onSnapshot(doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles'), (docSnapshot) => {
                         if (docSnapshot.exists()) {
                             customWeeklyTitles = docSnapshot.data();
+                            console.log("Firestore: Custom titles data received.", customWeeklyTitles);
                         } else {
                             customWeeklyTitles = {};
+                            console.log("Firestore: Custom titles document does not exist.");
                         }
                         renderAllContent(); // Re-render to update titles
                     }, (error) => {
@@ -1155,10 +1159,12 @@
                     // User is signed out or not yet signed in. Sign in anonymously.
                     // Added a small delay to ensure Firebase SDK is fully initialized before attempting sign-in
                     setTimeout(async () => {
+                        console.log("Firebase Auth: Attempting anonymous sign-in...");
                         try {
                             // Check if anonymous authentication is enabled in Firebase project
                             // This is the most common cause of "auth/configuration-not-found"
                             await signInAnonymously(auth);
+                            console.log("Firebase Auth: Anonymous sign-in successful.");
                         } catch (error) {
                             console.error("Error signing in anonymously: ", error);
                             if (error.code === 'auth/configuration-not-found') {
