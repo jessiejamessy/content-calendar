@@ -8,6 +8,58 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Slackey&display=swap" rel="stylesheet">
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        // Updated Firebase SDK versions to 12.0.0 as per user's provided script
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration - INSERTED USER'S PROVIDED CONFIG HERE
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqOoWBpthRQBI7Xgi-co3-Wrf8jX_nPnY",
+            authDomain: "contentcalendar-10154.firebaseapp.com",
+            projectId: "contentcalendar-10154",
+            storageBucket: "contentcalendar-10154.firebasestorage.app",
+            messagingSenderId: "309580896666",
+            appId: "1:309580896666:web:9d987624d2efd644960223"
+            
+        };
+
+        // Define global variables for Firebase config and app ID
+        // We use firebaseConfig.projectId as the appId for consistency with Firestore paths
+        const appId = firebaseConfig.projectId;
+        // initialAuthToken is typically provided by the Canvas environment, keep as is.
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app); // Initialize analytics as requested
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Make Firebase instances globally accessible within the script scope
+        window.firebaseApp = app;
+        window.firebaseDb = db;
+        window.firebaseAuth = auth;
+        window.firebaseInitialAuthToken = initialAuthToken;
+        window.firebaseAppId = appId; // Make appId globally accessible
+        window.firebaseDoc = doc;
+        window.firebaseGetDoc = getDoc;
+        window.firebaseSetDoc = setDoc;
+        window.firebaseUpdateDoc = updateDoc;
+        window.firebaseDeleteDoc = deleteDoc;
+        window.firebaseOnSnapshot = onSnapshot;
+        window.firebaseCollection = collection;
+        window.firebaseQuery = query;
+        window.firebaseWhere = where;
+        window.firebaseAddDoc = addDoc;
+        window.firebaseGetDocs = getDocs;
+        window.firebaseSignInAnonymously = signInAnonymously;
+        window.firebaseSignInWithCustomToken = signInWithCustomToken;
+        window.firebaseOnAuthStateChanged = onAuthStateChanged;
+    </script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -125,12 +177,12 @@
         }
     </style>
 </head>
-<body class="text-slate-800">
+<body>
 
     <div class="container mx-auto p-4 md:p-8">
 
         <header class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-brand-charcoal western-font">Content Cowboy Interactive Calendar</h1>
+            <h1 class="text-4xl md:text-5xl font-bold text-brand-charcoal western-font">The Content Cowbot Interactive Calendar</h1>
             <p class="text-slate-600 mt-2 text-base md:text-lg">A dynamic view of your weekly content schedule.</p>
         </header>
 
@@ -188,16 +240,8 @@
                 </div>
                 <div class="md:col-span-4 flex items-center justify-end">
                     <span id="loggedInUserDisplay" class="text-sm font-medium text-slate-600 dark:text-slate-400">Not Logged In</span>
+                    <span id="currentUserIdDisplay" class="text-sm font-medium text-slate-600 dark:text-slate-400 ml-4"></span>
                 </div>
-            </div>
-             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                <button id="exportDataBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105">
-                    Export Data
-                </button>
-                <input type="file" id="importFileInput" accept=".json" class="hidden">
-                <button id="importDataBtn" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105">
-                    Import Data
-                </button>
             </div>
         </div>
 
@@ -215,8 +259,8 @@
             <h2 class="font-bold text-lg md:text-xl text-brand-charcoal mb-4">Customize Weekly Titles</h2>
             <div class="flex flex-col sm:flex-row gap-4 items-center">
                 <input type="text" id="customWeeklyTitleInput" placeholder="Enter custom weekly title (e.g., Q3 Planning)"
-                        class="flex-grow mt-1 block w-full sm:w-auto border border-slate-300 rounded-md shadow-sm p-2
-                                focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600">
+                       class="flex-grow mt-1 block w-full sm:w-auto border border-slate-300 rounded-md shadow-sm p-2
+                              focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600">
                 <button id="setCustomTitleBtn" class="w-full sm:w-auto bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
                     Set Custom Title
                 </button>
@@ -350,55 +394,82 @@
 
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        // IMPORTANT FIRESTORE SECURITY RULES:
+        // To allow public read/write access for authenticated users (including anonymous ones)
+        // to the 'posts', 'customWeeklyTitles', AND 'globalPreferences' collections,
+        // you MUST set the following rules in your Firebase project's Firestore Database -> Rules section:
+        /*
+        rules_version = '2';
+        service cloud.firestore {
+          match /databases/{database}/documents {
+            // Allow read and write access to public data for any authenticated user
+            match /artifacts/{appId}/public/data/{collectionId}/{documentId} {
+              allow read, write: if request.auth != null;
+            }
+          }
+        }
+        */
+        // Replace {appId} with your actual Firebase Project ID (e.g., 'contentcalendar-10154').
+        // Without these rules, you will get "Missing or insufficient permissions" errors.
+
+        // IMPORTANT FIREBASE AUTHENTICATION SETTINGS:
+        // To fix "Error (auth/configuration-not-found)", you MUST enable "Anonymous"
+        // as a sign-in provider in your Firebase project's Authentication -> Sign-in method tab.
+        // Your application uses anonymous authentication to allow all users to read data.
+
+
+        document.addEventListener('DOMContentLoaded', async () => {
             // Admin password (for client-side demo purposes only - NOT secure for production)
             const ADMIN_PASSWORD = "contentcowboy123";
 
-            // Function to load posts from Local Storage
-            function loadPosts() {
-                const storedPosts = localStorage.getItem('contentCowboyPosts');
-                return storedPosts ? JSON.parse(storedPosts) : [
-                    // Initial dummy data if no data in Local Storage
-                    { id: 1, publishDate: '2025-07-14', topic: 'Intro to Content Cowboy', platforms: ['Facebook', 'Instagram', 'TikTok'], type: 'Reel, Post', status: 'Scheduled', notes: 'Short video + engaging caption', resources: 'https://drive.google.com/folder1', outputLink: 'https://facebook.com/post1' },
-                    { id: 2, publishDate: '2025-07-15', topic: '3 Tips for Viral Posts', platforms: ['Blog', 'LinkedIn'], type: 'Article', status: 'In Progress', notes: 'Draft outline complete', resources: 'https://docs.google.com/article-draft', outputLink: '' },
-                    { id: 3, publishDate: '2025-07-16', topic: 'Client Success Story', platforms: ['Instagram', 'Facebook'], type: 'Carousel', status: 'To Do', notes: 'Gather testimonials', resources: 'https://trello.com/board/client-story', outputLink: '' },
-                    { id: 4, publishDate: '2025-07-17', topic: 'Q&A: Content Strategy', platforms: ['Facebook Live'], type: 'Live Stream', status: 'To Do', notes: 'Prepare common questions', resources: 'https://zoom.us/meeting-link', outputLink: '' },
-                    { id: 5, publishDate: '2025-07-18', topic: 'Weekend Roundup', platforms: ['Facebook', 'Instagram'], type: 'Story', status: 'To Do', notes: 'Casual, interactive poll', resources: 'https://canva.com/design-template', outputLink: '' },
-                    { id: 6, publishDate: '2025-07-19', topic: 'Weekend Chill Post', platforms: ['Instagram'], type: 'Photo', status: 'To Do', notes: 'Optional weekend content', resources: '', outputLink: '' },
-                    { id: 7, publishDate: '2025-07-20', topic: 'Weekly Reflection', platforms: ['Facebook'], type: 'Text Post', status: 'Scheduled', notes: 'Optional weekend content', resources: '', outputLink: '' },
-                    { id: 8, publishDate: '2025-07-14', topic: 'New Monday Post', platforms: ['X'], type: 'Text', status: 'Posted', notes: 'Example of a posted item', resources: '', outputLink: 'https://x.com/somepost' },
-                    // Posts for the next week
-                    { id: 9, publishDate: '2025-07-21', topic: 'Next Week Monday Plan', platforms: ['Blog'], type: 'Article', status: 'To Do', notes: 'Outline for next week\'s main article', resources: '', outputLink: '' },
-                    { id: 10, publishDate: '2025-07-22', topic: 'Next Week Tuesday Reel', platforms: ['Instagram', 'TikTok'], type: 'Reel', status: 'In Progress', notes: 'Scripting for a short reel', resources: '', outputLink: '' },
-                    { id: 11, publishDate: '2025-07-23', topic: 'Next Week Wednesday Posted', platforms: ['LinkedIn'], type: 'Post', status: 'Posted', notes: 'Pre-scheduled LinkedIn thought leadership', resources: '', outputLink: 'https://linkedin.com/post-next-week' },
-                    { id: 12, publishDate: '2025-07-15', topic: 'Design Mockup Review', platforms: ['Behance'], type: 'Case Study', status: 'For Approval', notes: 'Awaiting client feedback on initial designs.', resources: 'https://behance.net/project-link', outputLink: '' } // Changed dummy post status
-                ];
-            }
+            // --- Firebase Globals (from script type="module" above) ---
+            const app = window.firebaseApp;
+            const db = window.firebaseDb;
+            const auth = window.firebaseAuth;
+            const initialAuthToken = window.firebaseInitialAuthToken;
+            const appId = window.firebaseAppId;
+            const doc = window.firebaseDoc;
+            const getDoc = window.firebaseGetDoc;
+            const setDoc = window.firebaseSetDoc;
+            const updateDoc = window.firebaseUpdateDoc;
+            const deleteDoc = window.firebaseDeleteDoc;
+            const onSnapshot = window.firebaseOnSnapshot;
+            const collection = window.firebaseCollection;
+            const query = window.firebaseQuery;
+            const where = window.firebaseWhere;
+            const addDoc = window.firebaseAddDoc;
+            const getDocs = window.firebaseGetDocs;
+            const signInAnonymously = window.firebaseSignInAnonymously;
+            const signInWithCustomToken = window.firebaseSignInWithCustomToken;
+            const onAuthStateChanged = window.firebaseOnAuthStateChanged;
+            // --- End Firebase Globals ---
 
-            // Function to save posts to Local Storage
-            function savePosts() {
-                localStorage.setItem('contentCowboyPosts', JSON.stringify(posts));
-            }
+            let posts = []; // This will now be populated by Firestore
+            let customWeeklyTitles = {}; // This will now be populated by Firestore
+            let currentUserId = null;
+            let isAdminLoggedIn = false; // Initial state
 
-            let posts = loadPosts(); // Load posts when the page starts
+            // Global preferences from Firestore
+            let globalPreferences = {
+                platformFilter: 'All Platforms',
+                statusFilter: 'All Statuses',
+                weekStartDay: 'Monday'
+            };
 
+            // UI Elements
             const platformFilter = document.getElementById('platformFilter');
             const statusFilter = document.getElementById('statusFilter');
-            const weekStartDayFilter = document.getElementById('weekStartDayFilter'); // New filter
+            const weekStartDayFilter = document.getElementById('weekStartDayFilter');
             const darkModeToggle = document.getElementById('darkModeToggle');
             const currentWeekDisplay = document.getElementById('currentWeekDisplay');
-            const currentWeekPlannedTitle = document.getElementById('current-week-planned-title'); // New element for title
-            const currentWeekPostedTitle = document.getElementById('current-week-posted-title'); // New element for title
+            const currentWeekPlannedTitle = document.getElementById('current-week-planned-title');
+            const currentWeekPostedTitle = document.getElementById('current-week-posted-title');
             const prevWeekBtn = document.getElementById('prevWeekBtn');
             const nextWeekBtn = document.getElementById('nextWeekBtn');
 
-            const customWeeklyTitleInput = document.getElementById('customWeeklyTitleInput'); // New input
-            const setCustomTitleBtn = document.getElementById('setCustomTitleBtn');        // New button
-            const clearCustomTitleBtn = document.getElementById('clearCustomTitleBtn');      // New button
-
-            const exportDataBtn = document.getElementById('exportDataBtn'); // New export button
-            const importDataBtn = document.getElementById('importDataBtn'); // New import button
-            const importFileInput = document.getElementById('importFileInput'); // Hidden file input
+            const customWeeklyTitleInput = document.getElementById('customWeeklyTitleInput');
+            const setCustomTitleBtn = document.getElementById('setCustomTitleBtn');
+            const clearCustomTitleBtn = document.getElementById('clearCustomTitleBtn');
 
             const modal = document.getElementById('postModal');
             const modalContent = document.getElementById('modal-content');
@@ -407,18 +478,15 @@
             const postForm = document.getElementById('postForm');
             const modalTitle = document.getElementById('modalTitle');
             const postIdInput = document.getElementById('postId');
-            const publishDateInputModal = document.getElementById('publishDate'); // Reference to publishDate input in modal
-            const platformsInputModal = document.getElementById('platforms'); // Reference to platforms input in modal
-            const statusSelectModal = document.getElementById('status'); // Reference to status select in modal
+            const publishDateInputModal = document.getElementById('publishDate');
+            const platformsInputModal = document.getElementById('platforms');
+            const statusSelectModal = document.getElementById('status');
 
-
-            // Delete Confirmation Modal elements
             const deleteConfirmModal = document.getElementById('deleteConfirmModal');
             const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
             const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-            let postIdToDelete = null; // To store the ID of the post to be deleted
+            let postIdToDelete = null;
 
-            // Admin Login Modal elements
             const loginModal = document.getElementById('loginModal');
             const adminLoginBtn = document.getElementById('adminLoginBtn');
             const adminLogoutBtn = document.getElementById('adminLogoutBtn');
@@ -427,16 +495,16 @@
             const adminPasswordInput = document.getElementById('adminPassword');
             const loginError = document.getElementById('loginError');
             const loggedInUserDisplay = document.getElementById('loggedInUserDisplay');
+            const currentUserIdDisplay = document.getElementById('currentUserIdDisplay');
 
             let platformChart, statusChart;
 
-            // Status colors are kept distinct for clarity of status
             const statusColors = {
                 'To Do': 'bg-rose-200',
                 'In Progress': 'bg-amber-200',
                 'Scheduled': 'bg-sky-200',
                 'Posted': 'bg-emerald-200',
-                'For Approval': 'bg-violet-200', // New color for For Approval
+                'For Approval': 'bg-violet-200',
             };
 
             const statusTextColors = {
@@ -444,10 +512,9 @@
                 'In Progress': 'text-amber-800',
                 'Scheduled': 'text-sky-800',
                 'Posted': 'text-emerald-800',
-                'For Approval': 'text-violet-800', // New text color for For Approval
+                'For Approval': 'text-violet-800',
             };
 
-            // Platform specific colors
             const platformTagColors = {
                 'Facebook': { bg: 'bg-facebook', text: 'text-facebook' },
                 'Instagram': { bg: 'bg-instagram', text: 'text-instagram' },
@@ -457,22 +524,19 @@
                 'X': { bg: 'bg-x', text: 'text-x' },
                 'Behance': { bg: 'bg-behance', text: 'text-behance' },
                 'YouTube': { bg: 'bg-youtube', text: 'text-youtube' },
-                // Default fallback if not specified
                 'default': { bg: 'bg-slate-200', text: 'text-slate-700' }
             };
 
-
-            // Chart colors updated to reflect brand palette
             function getChartColors(isDarkMode) {
                 if (isDarkMode) {
                     return {
-                        platforms: ['#94a3b8', '#fca5a5', '#e2e8f0', '#a78bfa', '#fbcfe8', '#f87171', '#c4b5fd', '#60a5fa'], // Adjusted for dark background
+                        platforms: ['#94a3b8', '#fca5a5', '#e2e8f0', '#a78bfa', '#fbcfe8', '#f87171', '#c4b5fd', '#60a5fa'],
                         statuses: {
                             'To Do': '#fca5a5',
                             'In Progress': '#94a3b8',
                             'Scheduled': '#e2e8f0',
                             'Posted': '#a7f3d0',
-                            'For Approval': '#d8b4fe' // Dark mode color for For Approval
+                            'For Approval': '#d8b4fe'
                         }
                     };
                 } else {
@@ -483,69 +547,59 @@
                             'In Progress': '#ADD8E6',
                             'Scheduled': '#333333',
                             'Posted': '#10b981',
-                            'For Approval': '#5b21b6' // Light mode color for For Approval
+                            'For Approval': '#5b21b6'
                         }
                     };
                 }
             }
 
-            // Week Navigation Logic
-            let preferredWeekStartDay = localStorage.getItem('weekStartDay') || 'Monday'; // Load preference, default to Monday
-            weekStartDayFilter.value = preferredWeekStartDay; // Set filter dropdown to loaded preference
-
-            let currentWeekStartDate = getWeekStartDate(new Date(), preferredWeekStartDay); // Initialize based on preference
-
-            // Retrieve custom weekly titles from local storage
-            let customWeeklyTitles = JSON.parse(localStorage.getItem('customWeeklyTitles')) || {};
-
-            // Admin login state
-            let isAdminLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
+            // `preferredWeekStartDay` will now be managed by `globalPreferences`
+            let currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
 
             function getWeekStartDate(d, startDayName) {
                 d = new Date(d);
-                d.setHours(0, 0, 0, 0); // Normalize to start of day
-                const day = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+                d.setHours(0, 0, 0, 0);
+                const day = d.getDay();
                 let diff = 0;
 
                 if (startDayName === 'Monday') {
-                    diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday is 1, Sunday is 0 (needs -6)
-                } else { // Sunday
-                    diff = d.getDate() - day; // Sunday is 0, so subtract 0
+                    diff = d.getDate() - day + (day === 0 ? -6 : 1);
+                } else {
+                    diff = d.getDate() - day;
                 }
                 const newDate = new Date(d.setDate(diff));
-                newDate.setHours(0, 0, 0, 0); // Ensure it's at the start of the day
+                newDate.setHours(0, 0, 0, 0);
                 return newDate;
             }
 
             function formatDate(date) {
-                return date.toISOString().split('T')[0]; // YYYY-MM-DD
+                return date.toISOString().split('T')[0];
             }
 
             function getWeekRangeText(date) {
-                const start = getWeekStartDate(new Date(date), preferredWeekStartDay);
+                const start = getWeekStartDate(new Date(date), globalPreferences.weekStartDay); // Use global preference
                 const end = new Date(start);
                 end.setDate(start.getDate() + 6);
                 const options = { month: 'long', day: 'numeric', year: 'numeric' };
                 return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
             }
 
-            // Function to get the current week's unique identifier (e.g., "2025-W29-MonStart")
             function getCurrentWeekId() {
                 const weekStartDateFormatted = formatDate(currentWeekStartDate);
-                return `${weekStartDateFormatted}-${preferredWeekStartDay}Start`;
+                return `${weekStartDateFormatted}-${globalPreferences.weekStartDay}Start`; // Use global preference
             }
 
             function getOrderedDaysOfWeek(startDayName) {
                 const allDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
                 if (startDayName === 'Monday') {
-                    return [...allDays.slice(1), allDays[0]]; // Monday to Sunday
+                    return [...allDays.slice(1), allDays[0]];
                 }
-                return allDays; // Sunday to Saturday
+                return allDays;
             }
 
             function createPostCard(post) {
                 const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow relative'; // Added relative for positioning delete button
+                card.className = 'bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow relative';
                 card.dataset.id = post.id;
 
                 const platformsHtml = post.platforms.map(p => {
@@ -570,7 +624,6 @@
                     </button>
                     ` : ''}
                 `;
-                // Attach click listener for editing (on the card itself, excluding the delete button)
                 card.addEventListener('click', (e) => {
                     if (!e.target.closest('.delete-post-btn')) {
                         if (isAdminLoggedIn) {
@@ -580,14 +633,12 @@
                         }
                     }
                 });
-                // Attach click listener for delete button
                 if (isAdminLoggedIn) {
                     card.querySelector('.delete-post-btn').addEventListener('click', (e) => {
-                        e.stopPropagation(); // Prevent card click event from firing
+                        e.stopPropagation();
                         showDeleteConfirm(post.id);
                     });
                 }
-
                 return card;
             }
 
@@ -603,20 +654,24 @@
                 postIdToDelete = null;
             }
 
-            function deletePost() {
+            async function deletePost() {
                 if (postIdToDelete !== null) {
-                    posts = posts.filter(post => post.id !== postIdToDelete);
-                    savePosts();
-                    populateFilters();
-                    renderAllContent(); // Call the main rendering function
-                    hideDeleteConfirm();
+                    try {
+                        const postRef = doc(db, `artifacts/${appId}/public/data/posts`, String(postIdToDelete));
+                        await deleteDoc(postRef);
+                        // onSnapshot listener will handle re-rendering
+                        hideDeleteConfirm();
+                    } catch (e) {
+                        console.error("Error deleting document: ", e);
+                        alert("Error deleting post.");
+                    }
                 }
             }
 
-
             function getFilteredPosts() {
-                const selectedPlatform = platformFilter.value;
-                const selectedStatus = statusFilter.value;
+                // Use global preferences for filtering
+                const selectedPlatform = globalPreferences.platformFilter;
+                const selectedStatus = globalPreferences.statusFilter;
 
                 const weekStart = new Date(currentWeekStartDate);
                 weekStart.setHours(0, 0, 0, 0);
@@ -626,44 +681,35 @@
                 weekEnd.setHours(0, 0, 0, 0);
 
                 const allPostsFilteredByPlatform = posts.filter(post => {
-                    return selectedPlatform === 'All Platforms' || post.platforms.includes(selectedPlatform);
+                    return selectedPlatform === 'All Platforms' || (post.platforms && post.platforms.includes(selectedPlatform));
                 });
 
-                // Filter for "Current Week Content" (non-posted statuses)
                 let currentWeekNonPosted = allPostsFilteredByPlatform.filter(post =>
                     post.status !== 'Posted' &&
                     new Date(post.publishDate).setHours(0,0,0,0) >= weekStart.getTime() &&
                     new Date(post.publishDate).setHours(0,0,0,0) < weekEnd.getTime()
                 );
-                // Apply status filter ONLY to non-posted content
                 if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
                     currentWeekNonPosted = currentWeekNonPosted.filter(post => post.status === selectedStatus);
                 }
 
-
-                // Filter for "Posted Content by Day" (only 'Posted' status for the current week)
                 let currentWeekPostedByDay = allPostsFilteredByPlatform.filter(post =>
                     post.status === 'Posted' &&
                     new Date(post.publishDate).setHours(0,0,0,0) >= weekStart.getTime() &&
                     new Date(post.publishDate).setHours(0,0,0,0) < weekEnd.getTime()
                 );
-                // If the filter is explicitly set to something other than 'Posted', clear this section
                 if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
                     currentWeekPostedByDay = [];
                 }
 
-
-                // "All Posted Content" (Archive) - always shows ALL posted content, only filtered by platform
                 let allTimePosted = posts.filter(post => post.status === 'Posted');
                 if (selectedPlatform !== 'All Platforms') {
-                    allTimePosted = allTimePosted.filter(post => post.platforms.includes(selectedPlatform));
+                    allTimePosted = allTimePosted.filter(post => (post.platforms && post.platforms.includes(selectedPlatform)));
                 }
-                // If the status filter is NOT 'All Statuses' and NOT 'Posted', then hide the All Posted Content section
                 if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
                     allTimePosted = [];
                 }
                 
-
                 return {
                     currentWeekNonPosted: currentWeekNonPosted,
                     currentWeekPostedByDay: currentWeekPostedByDay,
@@ -672,27 +718,31 @@
             }
 
             function renderAllContent() {
-                const orderedDays = getOrderedDaysOfWeek(preferredWeekStartDay);
+                const orderedDays = getOrderedDaysOfWeek(globalPreferences.weekStartDay); // Use global preference
                 const currentWeekRangeText = getWeekRangeText(currentWeekStartDate);
                 const weekId = getCurrentWeekId();
                 const isDarkMode = document.documentElement.classList.contains('dark');
 
-                // Check for custom title
                 const customTitle = customWeeklyTitles[weekId];
                 if (customTitle) {
                     currentWeekPlannedTitle.textContent = customTitle;
                     currentWeekPostedTitle.textContent = customTitle;
-                    customWeeklyTitleInput.value = customTitle; // Update input box with current custom title
+                    customWeeklyTitleInput.value = customTitle;
                 } else {
                     currentWeekPlannedTitle.textContent = currentWeekRangeText;
                     currentWeekPostedTitle.textContent = currentWeekRangeText;
-                    customWeeklyTitleInput.value = ''; // Clear input if no custom title
+                    customWeeklyTitleInput.value = '';
                 }
                 
-                // Update week navigation display (always date-based)
                 currentWeekDisplay.textContent = currentWeekRangeText;
+                currentUserIdDisplay.textContent = currentUserId ? `User ID: ${currentUserId}` : '';
 
-                // Clear all grid containers
+                // Set filter dropdowns based on global preferences
+                platformFilter.value = globalPreferences.platformFilter;
+                statusFilter.value = globalPreferences.statusFilter;
+                weekStartDayFilter.value = globalPreferences.weekStartDay;
+
+
                 const currentWeekGrid = document.getElementById('current-week-grid');
                 currentWeekGrid.innerHTML = '';
                 const postedDailyGrid = document.getElementById('posted-daily-grid');
@@ -700,22 +750,20 @@
                 const allPostedContentContainer = document.getElementById('all-posted-content-container');
                 allPostedContentContainer.innerHTML = '';
 
-                // Dynamically create day columns for Current Week (Non-Posted)
                 for (let i = 0; i < 7; i++) {
                     const dayColumn = document.createElement('div');
-                    dayColumn.id = `current-week-day-column-${i}`; // Unique ID
+                    dayColumn.id = `current-week-day-column-${i}`;
                     
-                    // Apply light mode specific classes for backgrounds
                     let dayClasses = `rounded-lg p-4 day-column`;
                     if (isDarkMode) {
-                        dayClasses += ` dark:bg-gray-700`; // Default dark background for all days
+                        dayClasses += ` dark:bg-gray-700`;
                         if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
-                            dayClasses += ` dark:bg-gray-800`; // Slightly darker for weekend in dark mode
+                            dayClasses += ` dark:bg-gray-800`;
                         }
                     } else {
-                        dayClasses += ` light-mode-weekday`; // Default light blue for weekdays
+                        dayClasses += ` light-mode-weekday`;
                         if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
-                            dayClasses += ` light-mode-weekend`; // Slightly different light blue for weekend
+                            dayClasses += ` light-mode-weekend`;
                         }
                     }
                     dayColumn.className = dayClasses;
@@ -724,22 +772,20 @@
                     currentWeekGrid.appendChild(dayColumn);
                 }
 
-                // Dynamically create day columns for Posted Content by Day (Current Week)
                 for (let i = 0; i < 7; i++) {
                     const dayColumn = document.createElement('div');
-                    dayColumn.id = `posted-daily-day-column-${i}`; // Unique ID
+                    dayColumn.id = `posted-daily-day-column-${i}`;
                     
-                    // Apply light mode specific classes for backgrounds
                     let dayClasses = `rounded-lg p-4 day-column`;
                     if (isDarkMode) {
-                        dayClasses += ` dark:bg-gray-700`; // Default dark background for all days
+                        dayClasses += ` dark:bg-gray-700`;
                         if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
-                            dayClasses += ` dark:bg-gray-800`; // Slightly darker for weekend in dark mode
+                            dayClasses += ` dark:bg-gray-800`;
                         }
                     } else {
-                        dayClasses += ` light-mode-weekday`; // Default light blue for weekdays
+                        dayClasses += ` light-mode-weekday`;
                         if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
-                            dayClasses += ` light-mode-weekend`; // Slightly different light blue for weekend
+                            dayClasses += ` light-mode-weekend`;
                         }
                     }
                     dayColumn.className = dayClasses;
@@ -750,12 +796,11 @@
 
                 const { currentWeekNonPosted, currentWeekPostedByDay, allTimePosted } = getFilteredPosts();
 
-                // Render non-posted content for current week
                 currentWeekNonPosted.forEach(post => {
                     const postDate = new Date(post.publishDate);
                     postDate.setHours(0,0,0,0);
                     
-                    const startOfWeekOfPost = getWeekStartDate(postDate, preferredWeekStartDay);
+                    const startOfWeekOfPost = getWeekStartDate(postDate, globalPreferences.weekStartDay); // Use global preference
                     const diffTime = postDate.getTime() - startOfWeekOfPost.getTime();
                     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
@@ -765,12 +810,11 @@
                     }
                 });
 
-                // Render posted content for current week, by day
                 currentWeekPostedByDay.forEach(post => {
                     const postDate = new Date(post.publishDate);
                     postDate.setHours(0,0,0,0);
                     
-                    const startOfWeekOfPost = getWeekStartDate(postDate, preferredWeekStartDay);
+                    const startOfWeekOfPost = getWeekStartDate(postDate, globalPreferences.weekStartDay); // Use global preference
                     const diffTime = postDate.getTime() - startOfWeekOfPost.getTime();
                     const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
@@ -780,18 +824,15 @@
                     }
                 });
 
-                // Render all posted content in its dedicated section
                 allTimePosted.forEach(post => {
                     if (allPostedContentContainer) {
                         allPostedContentContainer.appendChild(createPostCard(post));
                     }
                 });
 
-                // Charts should use all *visible* data, so combine based on filters
-                // Note: allTimePosted is now filtered by platform, but not status (unless status filter specifically hides it)
                 const allVisiblePostsForCharts = [...currentWeekNonPosted, ...currentWeekPostedByDay, ...allTimePosted];
                 renderCharts(allVisiblePostsForCharts);
-                updateAdminUI(); // Update UI elements based on login status
+                updateAdminUI();
             }
 
             function renderCharts(data) {
@@ -800,15 +841,16 @@
 
                 const platformCounts = {};
                 data.forEach(post => {
-                    post.platforms.forEach(p => {
-                        platformCounts[p] = (platformCounts[p] || 0) + 1;
-                    });
+                    if (post.platforms) {
+                        post.platforms.forEach(p => {
+                            platformCounts[p] = (platformCounts[p] || 0) + 1;
+                        });
+                    }
                 });
 
-                // Initialize all status counts to 0, including the new 'For Approval' status
                 const statusCounts = { 'To Do': 0, 'In Progress': 0, 'For Approval': 0, 'Scheduled': 0, 'Posted': 0 };
                 data.forEach(post => {
-                    if (statusCounts.hasOwnProperty(post.status)) { // Ensure status exists in our predefined list
+                    if (statusCounts.hasOwnProperty(post.status)) {
                         statusCounts[post.status]++;
                     }
                 });
@@ -822,7 +864,7 @@
                         datasets: [{
                             data: Object.values(platformCounts),
                             backgroundColor: currentChartColors.platforms,
-                            borderColor: isDarkMode ? '#2d3748' : '#fff', // Adjust border for dark mode
+                            borderColor: isDarkMode ? '#2d3748' : '#fff',
                             borderWidth: 2
                         }]
                     },
@@ -833,7 +875,7 @@
                             legend: {
                                 position: 'bottom',
                                 labels: {
-                                    color: isDarkMode ? '#e2e8f0' : '#333333' // Legend text color
+                                    color: isDarkMode ? '#e2e8f0' : '#333333'
                                 }
                             }
                         }
@@ -865,30 +907,44 @@
                                 beginAtZero: true,
                                 ticks: {
                                     stepSize: 1,
-                                    color: isDarkMode ? '#e2e8f0' : '#333333' // Y-axis label color
+                                    color: isDarkMode ? '#e2e8f0' : '#333333'
                                 }
                             },
                             x: {
                                 ticks: {
-                                    color: isDarkMode ? '#e2e8f0' : '#333333' // X-axis label color
+                                    color: isDarkMode ? '#e2e8f0' : '#333333'
                                 }
-                                /* Removed categoryPercentage and barPercentage for default behavior */
                             }
                         }
                     }
                 });
             }
 
-            function populateFilters() {
-                const allPlatforms = new Set();
-                posts.forEach(p => p.platforms.forEach(pf => allPlatforms.add(pf)));
+            async function populateFilters() {
+                // Fetch all posts to get all unique platforms
+                try {
+                    const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
+                    const querySnapshot = await getDocs(postsCollectionRef);
+                    const allPlatforms = new Set();
+                    querySnapshot.forEach(doc => {
+                        const post = doc.data();
+                        if (post.platforms) {
+                            post.platforms.forEach(pf => allPlatforms.add(pf));
+                        }
+                    });
 
-                platformFilter.innerHTML = '<option>All Platforms</option>';
-                Array.from(allPlatforms).sort().forEach(pf => { // Sort platforms alphabetically
-                    const option = document.createElement('option');
-                    option.textContent = pf;
-                    platformFilter.appendChild(option);
-                });
+                    platformFilter.innerHTML = '<option>All Platforms</option>';
+                    Array.from(allPlatforms).sort().forEach(pf => {
+                        const option = document.createElement('option');
+                        option.textContent = pf;
+                        platformFilter.appendChild(option);
+                    });
+                    // Ensure the selected value in the dropdown matches the global preference
+                    platformFilter.value = globalPreferences.platformFilter;
+
+                } catch (e) {
+                    console.error("Error populating filters:", e);
+                }
             }
 
             function openModal(post = null) {
@@ -897,18 +953,16 @@
                     modalTitle.textContent = 'Edit Content';
                     postIdInput.value = post.id;
                     document.getElementById('contentTopic').value = post.topic;
-                    publishDateInputModal.value = post.publishDate; // Set the date input value
+                    publishDateInputModal.value = post.publishDate;
                     statusSelectModal.value = post.status;
-                    platformsInputModal.value = post.platforms.join(', ');
+                    platformsInputModal.value = post.platforms ? post.platforms.join(', ') : '';
                     document.getElementById('contentType').value = post.type;
                     document.getElementById('resources').value = post.resources || '';
                     document.getElementById('outputLink').value = post.outputLink || '';
-                    document.getElementById('notes').value = post.notes;
-
+                    document.getElementById('notes').value = post.notes || '';
                 } else {
                     modalTitle.textContent = 'Add New Content';
                     postIdInput.value = '';
-                    // Default to today's date for new posts
                     publishDateInputModal.value = formatDate(new Date());  
                     statusSelectModal.value = 'To Do';
                 }
@@ -925,14 +979,14 @@
                 }, 300);
             }
 
-            function handleFormSubmit(e) {
+            async function handleFormSubmit(e) {
                 e.preventDefault();
                 const id = postIdInput.value;
-                const publishDate = publishDateInputModal.value; // Get date directly from input
+                const publishDate = publishDateInputModal.value;
 
                 const newPostData = {
                     topic: document.getElementById('contentTopic').value,
-                    publishDate: publishDate, // Use the selected date directly
+                    publishDate: publishDate,
                     status: statusSelectModal.value,
                     platforms: platformsInputModal.value.split(',').map(p => p.trim()).filter(p => p !== ''),
                     type: document.getElementById('contentType').value,
@@ -941,33 +995,33 @@
                     notes: document.getElementById('notes').value,
                 };
 
-                if (id) {
-                    const index = posts.findIndex(p => p.id == id);
-                    posts[index] = { ...posts[index], ...newPostData };
-                } else {
-                    newPostData.id = Date.now();
-                    posts.push(newPostData);
+                try {
+                    if (id) {
+                        const postRef = doc(db, `artifacts/${appId}/public/data/posts`, String(id)); // Ensure ID is string
+                        await setDoc(postRef, newPostData, { merge: true }); // Use setDoc with merge for update
+                    } else {
+                        // Firestore automatically generates an ID if you use addDoc
+                        const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), newPostData);
+                        // newPostData.id = docRef.id; // This line is commented out, but onSnapshot will re-fetch anyway.
+                    }
+                    // No need to call populateFilters or renderAllContent here, onSnapshot will handle it
+                    closeModal();
+                } catch (e) {
+                    console.error("Error saving document: ", e);
+                    alert("Error saving post.");
                 }
-
-                savePosts();
-                populateFilters();
-                statusFilter.value = 'All Statuses'; // Reset status filter to "All Statuses"
-                renderAllContent();
-                closeModal();
             }
 
-            // Dark Mode Logic
             function toggleDarkMode() {
                 document.documentElement.classList.toggle('dark');
                 const isDarkMode = document.documentElement.classList.contains('dark');
                 localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
-                renderAllContent(); // Re-render to apply new day column colors
+                renderAllContent();
             }
 
-            // Admin Login/Logout Logic
             function showLoginModal() {
-                adminPasswordInput.value = ''; // Clear password field
-                loginError.classList.add('hidden'); // Hide error message
+                adminPasswordInput.value = '';
+                loginError.classList.add('hidden');
                 loginModal.classList.remove('hidden');
                 loginModal.classList.add('flex');
             }
@@ -977,8 +1031,11 @@
                 loginModal.classList.remove('flex');
             }
 
-            function login() {
+            async function login() {
                 if (adminPasswordInput.value === ADMIN_PASSWORD) {
+                    // In a real app, this would involve a server generating a custom token
+                    // For this client-side demo, we just set isAdminLoggedIn directly
+                    // and rely on Firebase's anonymous auth for read access.
                     isAdminLoggedIn = true;
                     localStorage.setItem('isAdminLoggedIn', 'true');
                     hideLoginModal();
@@ -991,17 +1048,13 @@
             function logout() {
                 isAdminLoggedIn = false;
                 localStorage.setItem('isAdminLoggedIn', 'false');
-                renderAllContent(); // Re-render to hide editable elements
+                renderAllContent();
             }
 
             function updateAdminUI() {
                 if (isAdminLoggedIn) {
                     addPostBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                     addPostBtn.disabled = false;
-                    exportDataBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    exportDataBtn.disabled = false;
-                    importDataBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    importDataBtn.disabled = false;
                     setCustomTitleBtn.classList.remove('opacity-50', 'cursor-not-allowed');
                     setCustomTitleBtn.disabled = false;
                     clearCustomTitleBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -1013,10 +1066,6 @@
                 } else {
                     addPostBtn.classList.add('opacity-50', 'cursor-not-allowed');
                     addPostBtn.disabled = true;
-                    exportDataBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    exportDataBtn.disabled = true;
-                    importDataBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    importDataBtn.disabled = true;
                     setCustomTitleBtn.classList.add('opacity-50', 'cursor-not-allowed');
                     setCustomTitleBtn.disabled = true;
                     clearCustomTitleBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -1028,7 +1077,151 @@
                 }
             }
 
-            // Apply dark mode preference on load
+            // Data Migration from LocalStorage to Firestore
+            async function migrateLocalStorageToFirestore() {
+                const localStoragePosts = JSON.parse(localStorage.getItem('contentCowboyPosts'));
+                const localStorageCustomTitles = JSON.parse(localStorage.getItem('customWeeklyTitles'));
+                const localStorageWeekStartDay = localStorage.getItem('weekStartDay'); // Get local weekStartDay
+
+                const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
+                const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
+                const globalPreferencesDocRef = doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings'); // New ref
+
+                const firestorePostsSnapshot = await getDocs(postsCollectionRef);
+                const firestoreCustomTitlesDoc = await getDoc(customTitlesDocRef);
+                const firestoreGlobalPreferencesDoc = await getDoc(globalPreferencesDocRef); // New doc fetch
+
+                let migrated = false;
+
+                if (localStoragePosts && localStoragePosts.length > 0 && firestorePostsSnapshot.empty) {
+                    console.log("Migrating posts from localStorage to Firestore...");
+                    for (const post of localStoragePosts) {
+                        // Use setDoc with the post.id as the document ID
+                        await setDoc(doc(postsCollectionRef, String(post.id)), post);
+                    }
+                    localStorage.removeItem('contentCowboyPosts'); // Clear local storage after migration
+                    migrated = true;
+                }
+
+                if (localStorageCustomTitles && Object.keys(localStorageCustomTitles).length > 0 && !firestoreCustomTitlesDoc.exists()) {
+                    console.log("Migrating custom weekly titles from localStorage to Firestore...");
+                    await setDoc(customTitlesDocRef, localStorageCustomTitles);
+                    localStorage.removeItem('customWeeklyTitles'); // Clear local storage after migration
+                    migrated = true;
+                }
+
+                // Migrate weekStartDay from localStorage to Firestore global preferences
+                if (localStorageWeekStartDay && !firestoreGlobalPreferencesDoc.exists()) {
+                    console.log("Migrating weekStartDay from localStorage to Firestore global preferences...");
+                    await setDoc(globalPreferencesDocRef, { weekStartDay: localStorageWeekStartDay }, { merge: true });
+                    localStorage.removeItem('weekStartDay'); // Clear local storage after migration
+                    migrated = true;
+                }
+                // Also, if filters were ever saved locally in the past (though not explicitly in previous versions of the code),
+                // you might consider a one-time migration for them too if needed.
+                // For this version, we assume filters default to 'All' if not in Firestore.
+
+
+                if (migrated) {
+                    alert("Existing data migrated to cloud storage!");
+                }
+            }
+
+            // Function to update global preferences in Firestore
+            async function updateGlobalPreferences(newPrefs) {
+                try {
+                    const globalPreferencesDocRef = doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings');
+                    await setDoc(globalPreferencesDocRef, newPrefs, { merge: true });
+                    console.log("Global preferences updated in Firestore:", newPrefs);
+                } catch (e) {
+                    console.error("Error updating global preferences: ", e);
+                    alert("Error saving preferences. Check Firestore rules for globalPreferences.");
+                }
+            }
+
+            // --- Firebase Initialization and Listeners ---
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                    currentUserIdDisplay.textContent = `User ID: ${currentUserId}`;
+                    console.log("Firebase Auth: User is signed in. UID:", currentUserId);
+
+                    // After authentication, perform data migration if necessary
+                    await migrateLocalStorageToFirestore();
+
+                    // Set up real-time listeners for posts
+                    onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), (snapshot) => {
+                        posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        console.log("Firestore: Posts data received.", posts);
+                        renderAllContent();
+                        populateFilters(); // Re-populate filters whenever posts change
+                    }, (error) => {
+                        console.error("Error listening to posts: ", error);
+                        alert("Error fetching posts data. Please check your Firestore Security Rules.");
+                    });
+
+                    // Set up real-time listener for custom weekly titles
+                    onSnapshot(doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles'), (docSnapshot) => {
+                        if (docSnapshot.exists()) {
+                            customWeeklyTitles = docSnapshot.data();
+                            console.log("Firestore: Custom titles data received.", customWeeklyTitles);
+                        } else {
+                            customWeeklyTitles = {};
+                            console.log("Firestore: Custom titles document does not exist.");
+                        }
+                        renderAllContent(); // Re-render to update titles
+                    }, (error) => {
+                        console.error("Error listening to custom titles: ", error);
+                        alert("Error fetching custom titles. Please check your Firestore Security Rules.");
+                    });
+
+                    // Set up real-time listener for global preferences
+                    onSnapshot(doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings'), (docSnapshot) => {
+                        if (docSnapshot.exists()) {
+                            globalPreferences = { ...globalPreferences, ...docSnapshot.data() }; // Merge with defaults
+                            console.log("Firestore: Global preferences received.", globalPreferences);
+                        } else {
+                            // If the document doesn't exist, create it with default values
+                            console.log("Firestore: Global preferences document does not exist. Setting defaults.");
+                            updateGlobalPreferences(globalPreferences); // Save defaults to Firestore
+                        }
+                        // Update UI elements immediately after preferences are loaded/updated
+                        platformFilter.value = globalPreferences.platformFilter;
+                        statusFilter.value = globalPreferences.statusFilter;
+                        weekStartDayFilter.value = globalPreferences.weekStartDay;
+                        currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay); // Recalculate week start based on global preference
+                        renderAllContent(); // Re-render to apply new preferences
+                    }, (error) => {
+                        console.error("Error listening to global preferences: ", error);
+                        alert("Error fetching global preferences. Please check your Firestore Security Rules for 'globalPreferences'.");
+                    });
+
+
+                } else {
+                    // User is signed out or not yet signed in. Sign in anonymously.
+                    // Added a small delay to ensure Firebase SDK is fully initialized before attempting sign-in
+                    setTimeout(async () => {
+                        console.log("Firebase Auth: Attempting anonymous sign-in...");
+                        try {
+                            // Check if anonymous authentication is enabled in Firebase project
+                            // This is the most common cause of "auth/configuration-not-found"
+                            await signInAnonymously(auth);
+                            console.log("Firebase Auth: Anonymous sign-in successful.");
+                        } catch (error) {
+                            console.error("Error signing in anonymously: ", error);
+                            if (error.code === 'auth/configuration-not-found') {
+                                alert("Authentication Error: Anonymous sign-in is NOT ENABLED. Please go to your Firebase project console (Authentication -> Sign-in method tab) and enable 'Anonymous' sign-in.");
+                            } else {
+                                alert("Error signing in. Please check your internet connection or Firebase configuration.");
+                            }
+                        }
+                    }, 500); // 500ms delay
+                }
+            });
+            // --- End Firebase Initialization and Listeners ---
+
+
+            // Apply dark mode preference on load (still local)
             if (localStorage.getItem('darkMode') === 'enabled') {
                 document.documentElement.classList.add('dark');
                 darkModeToggle.checked = true;
@@ -1036,19 +1229,23 @@
                 darkModeToggle.checked = false;
             }
 
-            // Event Listeners
-            platformFilter.addEventListener('change', renderAllContent);
-            statusFilter.addEventListener('change', renderAllContent);
+            // Event Listeners for filters - now update Firestore
+            platformFilter.addEventListener('change', (e) => {
+                globalPreferences.platformFilter = e.target.value;
+                updateGlobalPreferences({ platformFilter: e.target.value });
+                // renderAllContent will be triggered by onSnapshot
+            });
+            statusFilter.addEventListener('change', (e) => {
+                globalPreferences.statusFilter = e.target.value;
+                updateGlobalPreferences({ statusFilter: e.target.value });
+                // renderAllContent will be triggered by onSnapshot
+            });
             darkModeToggle.addEventListener('change', toggleDarkMode);
 
             weekStartDayFilter.addEventListener('change', (e) => {
-                preferredWeekStartDay = e.target.value;
-                localStorage.setItem('weekStartDay', preferredWeekStartDay);
-                
-                const middleOfCurrentDisplayedWeek = new Date(currentWeekStartDate);
-                middleOfCurrentDisplayedWeek.setDate(middleOfCurrentDisplayedWeek.getDate() + 3);
-                currentWeekStartDate = getWeekStartDate(middleOfCurrentDisplayedWeek, preferredWeekStartDay);  
-                renderAllContent();
+                globalPreferences.weekStartDay = e.target.value;
+                updateGlobalPreferences({ weekStartDay: e.target.value });
+                // currentWeekStartDate will be updated by onSnapshot, then renderAllContent
             });
 
             addPostBtn.addEventListener('click', () => {
@@ -1077,160 +1274,52 @@
             });
 
             // Custom Title Event Listeners
-            setCustomTitleBtn.addEventListener('click', () => {
+            setCustomTitleBtn.addEventListener('click', async () => {
                 if (!isAdminLoggedIn) {
                     showLoginModal();
                     return;
                 }
                 const newTitle = customWeeklyTitleInput.value.trim();
                 const weekId = getCurrentWeekId();
-                if (newTitle) {
-                    customWeeklyTitles[weekId] = newTitle;
-                } else {
-                    delete customWeeklyTitles[weekId]; // Remove if empty
+                try {
+                    const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
+                    if (newTitle) {
+                        await setDoc(customTitlesDocRef, { [weekId]: newTitle }, { merge: true });
+                    } else {
+                        // To delete a specific field in a document, you need to use updateDoc and FieldValue.delete()
+                        // However, FieldValue.delete() is not directly available in the global scope.
+                        // A simpler approach for a single document with multiple keys is to fetch, delete key, then set.
+                        const currentTitles = (await getDoc(customTitlesDocRef)).data() || {};
+                        delete currentTitles[weekId];
+                        await setDoc(customTitlesDocRef, currentTitles); // Overwrite with updated object
+                    }
+                    // onSnapshot will handle re-rendering
+                } catch (e) {
+                    console.error("Error setting custom title: ", e);
+                    alert("Error setting custom title.");
                 }
-                localStorage.setItem('customWeeklyTitles', JSON.stringify(customWeeklyTitles));
-                renderAllContent(); // Re-render to show updated title
             });
 
-            clearCustomTitleBtn.addEventListener('click', () => {
+            clearCustomTitleBtn.addEventListener('click', async () => {
                 if (!isAdminLoggedIn) {
                     showLoginModal();
                     return;
                 }
                 const weekId = getCurrentWeekId();
-                if (customWeeklyTitles[weekId]) {
-                    delete customWeeklyTitles[weekId];
-                    localStorage.setItem('customWeeklyTitles', JSON.stringify(customWeeklyTitles));
-                    renderAllContent(); // Re-render to show date-based title
-                }
-            });
-
-            // Export Data Function
-            exportDataBtn.addEventListener('click', () => {
-                if (!isAdminLoggedIn) {
-                    showLoginModal();
-                    return;
-                }
-                console.log('Export Data button clicked.'); // Debugging
-                const dataToExport = {
-                    posts: posts,
-                    customWeeklyTitles: customWeeklyTitles,
-                    darkMode: localStorage.getItem('darkMode'),
-                    weekStartDay: localStorage.getItem('weekStartDay')
-                };
-                const jsonData = JSON.stringify(dataToExport, null, 2); // null, 2 for pretty printing
-
-                const blob = new Blob([jsonData], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `content_cowboy_data_${formatDate(new Date())}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                // Replaced alert with a message box for better UX
-                alert('Calendar data exported successfully!');
-            });
-
-            // Import Data Function
-            importDataBtn.addEventListener('click', () => {
-                if (!isAdminLoggedIn) {
-                    showLoginModal();
-                    return;
-                }
-                console.log('Import Data button clicked.'); // Debugging
-                importFileInput.click(); // Trigger the hidden file input
-            });
-
-            importFileInput.addEventListener('change', (event) => {
-                console.log('File input change event fired.'); // Debugging
-                const file = event.target.files[0];
-                if (!file) {
-                    console.log('No file selected or dialog cancelled.'); // Debugging
-                    // Important: Reset the input value so the change event fires again if the user
-                    // selects the *same* file after canceling.
-                    event.target.value = '';  
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    console.log('FileReader loaded file.'); // Debugging
-                    try {
-                        const importedData = JSON.parse(e.target.result);
-                        console.log('Imported data:', importedData); // Debugging
-
-                        // Basic validation to ensure it's the right kind of data
-                        if (importedData.posts && Array.isArray(importedData.posts)) {
-                            posts = importedData.posts;
-                            savePosts(); // Save the new posts
-
-                            // Import other settings if present
-                            if (importedData.customWeeklyTitles) {
-                                customWeeklyTitles = importedData.customWeeklyTitles;
-                                localStorage.setItem('customWeeklyTitles', JSON.stringify(customWeeklyTitles));
-                            } else {
-                                // If imported data doesn't have custom titles, clear existing ones
-                                customWeeklyTitles = {};
-                                localStorage.removeItem('customWeeklyTitles');
-                            }
-
-                            if (importedData.darkMode) {
-                                localStorage.setItem('darkMode', importedData.darkMode);
-                                // Immediately apply dark mode if needed
-                                if (importedData.darkMode === 'enabled') {
-                                    document.documentElement.classList.add('dark');
-                                    darkModeToggle.checked = true;
-                                } else {
-                                    document.documentElement.classList.remove('dark');
-                                    darkModeToggle.checked = false;
-                                }
-                            } else {
-                                localStorage.removeItem('darkMode'); // Default to light if not specified
-                                document.documentElement.classList.remove('dark');
-                                darkModeToggle.checked = false;
-                            }
-
-                            if (importedData.weekStartDay) {
-                                localStorage.setItem('weekStartDay', importedData.weekStartDay);
-                                preferredWeekStartDay = importedData.weekStartDay;
-                                weekStartDayFilter.value = preferredWeekStartDay;
-                                // Reset current week start date based on new preference
-                                currentWeekStartDate = getWeekStartDate(new Date(), preferredWeekStartDay);
-                            } else {
-                                localStorage.removeItem('weekStartDay'); // Default to Monday if not specified
-                                preferredWeekStartDay = 'Monday';
-                                weekStartDayFilter.value = preferredWeekStartDay;
-                                currentWeekStartDate = getWeekStartDate(new Date(), preferredWeekStartDay);
-                            }
-
-                            populateFilters(); // Re-populate platform filter dropdown
-                            renderAllContent(); // Re-render the entire calendar
-                            alert('Calendar data imported successfully!');
-                        } else {
-                            alert('Invalid data file. Please select a valid Content Cowboy JSON export (expected "posts" array).');
-                        }
-                    } catch (error) {
-                        console.error('Error parsing imported file:', error);
-                        alert('Error importing data. Please ensure the file is a valid JSON.');
-                    } finally {
-                        // Crucially, reset the file input's value after processing
-                        // so that if the user selects the same file again, the 'change' event still fires.
-                        event.target.value = '';  
+                try {
+                    const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
+                    const currentTitles = (await getDoc(customTitlesDocRef)).data() || {};
+                    if (currentTitles[weekId]) {
+                        delete currentTitles[weekId];
+                        await setDoc(customTitlesDocRef, currentTitles); // Overwrite with updated object
                     }
-                };
-                reader.onerror = () => {
-                    alert('Failed to read file.');
-                    event.target.value = ''; // Reset on error too
-                };
-                reader.readAsText(file);
+                    // onSnapshot will handle re-rendering
+                } catch (e) {
+                    console.error("Error clearing custom title: ", e);
+                    alert("Error clearing custom title.");
+                }
             });
 
-
-            // Delete confirmation button listeners
             cancelDeleteBtn.addEventListener('click', hideDeleteConfirm);
             confirmDeleteBtn.addEventListener('click', deletePost);
             deleteConfirmModal.addEventListener('click', (e) => {
@@ -1239,7 +1328,6 @@
                 }
             });
 
-            // Admin Login Modal Listeners
             adminLoginBtn.addEventListener('click', showLoginModal);
             adminLogoutBtn.addEventListener('click', logout);
             cancelLoginBtn.addEventListener('click', hideLoginModal);
@@ -1255,9 +1343,8 @@
                 }
             });
 
-            // Initial render
-            populateFilters();
-            renderAllContent(); // This will also call updateAdminUI
+            // Initial UI update (data will be loaded by onAuthStateChanged listener)
+            updateAdminUI();
         });
     </script>
 </body>
