@@ -138,7 +138,7 @@
             <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">Weekly Analytics Overview</h2>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="analytics-card p-4 rounded-xl"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="platformChart"></canvas></div></div>
-                <div class="analytics-card p-4 rounded-xl"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status by Platform</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="statusChart"></canvas></div></div>
+                <div class="analytics-card p-4 rounded-xl"><h3 id="statusChartTitle" class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="statusChart"></canvas></div></div>
             </div>
         </section>
 
@@ -191,7 +191,7 @@
             let currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
             let platformChart, statusChart, postIdToDelete = null;
 
-            const ui = { platformFilter: document.getElementById('platformFilter'), statusFilter: document.getElementById('statusFilter'), weekStartDayFilter: document.getElementById('weekStartDayFilter'), darkModeToggle: document.getElementById('darkModeToggle'), currentWeekDisplay: document.getElementById('currentWeekDisplay'), currentWeekGrid: document.getElementById('current-week-grid'), postedDailyGrid: document.getElementById('posted-daily-grid'), allPostedContentContainer: document.getElementById('all-posted-content-container'), addPostBtn: document.getElementById('addPostBtn'), loggedInUserDisplay: document.getElementById('loggedInUserDisplay'), currentUserIdDisplay: document.getElementById('currentUserIdDisplay'), adminLoginBtn: document.getElementById('adminLoginBtn'), adminLogoutBtn: document.getElementById('adminLogoutBtn'), postModal: document.getElementById('postModal'), postForm: document.getElementById('postForm'), modalTitle: document.getElementById('modalTitle'), cancelBtn: document.getElementById('cancelBtn'), deleteConfirmModal: document.getElementById('deleteConfirmModal'), confirmDeleteBtn: document.getElementById('confirmDeleteBtn'), cancelDeleteBtn: document.getElementById('cancelDeleteBtn'), loginModal: document.getElementById('loginModal'), submitLoginBtn: document.getElementById('submitLoginBtn'), cancelLoginBtn: document.getElementById('cancelLoginBtn'), adminPasswordInput: document.getElementById('adminPassword'), loginError: document.getElementById('loginError'), prevWeekBtn: document.getElementById('prevWeekBtn'), nextWeekBtn: document.getElementById('nextWeekBtn') };
+            const ui = { platformFilter: document.getElementById('platformFilter'), statusFilter: document.getElementById('statusFilter'), weekStartDayFilter: document.getElementById('weekStartDayFilter'), darkModeToggle: document.getElementById('darkModeToggle'), currentWeekDisplay: document.getElementById('currentWeekDisplay'), currentWeekGrid: document.getElementById('current-week-grid'), postedDailyGrid: document.getElementById('posted-daily-grid'), allPostedContentContainer: document.getElementById('all-posted-content-container'), addPostBtn: document.getElementById('addPostBtn'), loggedInUserDisplay: document.getElementById('loggedInUserDisplay'), currentUserIdDisplay: document.getElementById('currentUserIdDisplay'), adminLoginBtn: document.getElementById('adminLoginBtn'), adminLogoutBtn: document.getElementById('adminLogoutBtn'), postModal: document.getElementById('postModal'), postForm: document.getElementById('postForm'), modalTitle: document.getElementById('modalTitle'), cancelBtn: document.getElementById('cancelBtn'), deleteConfirmModal: document.getElementById('deleteConfirmModal'), confirmDeleteBtn: document.getElementById('confirmDeleteBtn'), cancelDeleteBtn: document.getElementById('cancelDeleteBtn'), loginModal: document.getElementById('loginModal'), submitLoginBtn: document.getElementById('submitLoginBtn'), cancelLoginBtn: document.getElementById('cancelLoginBtn'), adminPasswordInput: document.getElementById('adminPassword'), loginError: document.getElementById('loginError'), prevWeekBtn: document.getElementById('prevWeekBtn'), nextWeekBtn: document.getElementById('nextWeekBtn'), statusChartTitle: document.getElementById('statusChartTitle') };
 
             const platformColors = {
                 'Facebook': '#1877F2', 'Instagram': '#E4405F', 'TikTok': '#000000',
@@ -247,6 +247,12 @@
                 const weekStart = currentWeekStartDate;
                 const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 7));
                 const postsInDateRange = posts.filter(p => { const d = new Date(p.publishDate); d.setUTCHours(0,0,0,0); return d >= weekStart && d < weekEnd; });
+                
+                // MODIFIED: This data is now specifically for the charts and respects the platform filter
+                const postsForCharts = (globalPreferences.platformFilter === 'All Platforms')
+                    ? postsInDateRange
+                    : postsInDateRange.filter(p => p.platforms.includes(globalPreferences.platformFilter));
+
                 const filteredWeeklyPosts = postsInDateRange.filter(p => (globalPreferences.platformFilter === 'All Platforms' || p.platforms.includes(globalPreferences.platformFilter)) && (globalPreferences.statusFilter === 'All Statuses' || p.status === globalPreferences.statusFilter));
                 const allTimePosted = posts.filter(p => p.status === 'Posted' && (globalPreferences.platformFilter === 'All Platforms' || p.platforms.includes(globalPreferences.platformFilter)));
                 const orderedDays = (globalPreferences.weekStartDay === 'Monday') ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -269,53 +275,41 @@
                 });
                 
                 allTimePosted.forEach(post => ui.allPostedContentContainer.appendChild(createPostCard(post)));
-                renderCharts(postsInDateRange);
+                renderCharts(postsForCharts);
                 updateAdminUI();
             }
 
-            // MODIFIED: This function is completely rewritten for the stacked bar chart.
+            // MODIFIED: This function now handles both stacked and simple bar charts.
             function renderCharts(data) {
                 const isDarkMode = document.documentElement.classList.contains('dark');
                 const chartColors = { text: isDarkMode ? '#94a3b8' : '#475569', border: isDarkMode ? '#475569' : '#e2e8f0' };
+                const selectedPlatform = globalPreferences.platformFilter;
 
-                // Doughnut chart logic (unchanged)
+                // Doughnut chart logic
                 const platformCounts = {};
                 data.forEach(post => post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1));
                 if(platformChart) platformChart.destroy();
                 platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts), backgroundColor: Object.keys(platformCounts).map(p => platformColors[p] || platformColors.default) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartColors.text } } } } });
 
-                // Stacked bar chart logic (new)
+                // Status chart logic
                 const statuses = ['To Do', 'In Progress', 'For Approval', 'Scheduled', 'Posted'];
-                const platformsInData = [...new Set(data.flatMap(p => p.platforms))].sort();
-
-                const statusDatasets = platformsInData.map(platform => {
-                    const counts = statuses.map(status => {
-                        return data.filter(post => post.status === status && post.platforms.includes(platform)).length;
-                    });
-                    return {
-                        label: platform,
-                        data: counts,
-                        backgroundColor: platformColors[platform] || platformColors.default,
-                    };
-                });
-
                 if(statusChart) statusChart.destroy();
-                statusChart = new Chart('statusChart', {
-                    type: 'bar',
-                    data: {
-                        labels: statuses,
-                        datasets: statusDatasets
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { labels: { color: chartColors.text } } },
-                        scales: {
-                            x: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} },
-                            y: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} }
-                        }
-                    }
-                });
+                
+                if (selectedPlatform === 'All Platforms') {
+                    ui.statusChartTitle.textContent = 'Content Status by Platform';
+                    const platformsInData = [...new Set(data.flatMap(p => p.platforms))].sort();
+                    const statusDatasets = platformsInData.map(platform => {
+                        const counts = statuses.map(status => data.filter(post => post.status === status && post.platforms.includes(platform)).length);
+                        return { label: platform, data: counts, backgroundColor: platformColors[platform] || platformColors.default };
+                    });
+                    statusChart = new Chart('statusChart', { type: 'bar', data: { labels: statuses, datasets: statusDatasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartColors.text } } }, scales: { x: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} }, y: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} } } } });
+                } else {
+                    ui.statusChartTitle.textContent = `Content Status for ${selectedPlatform}`;
+                    const statusCounts = {'To Do':0, 'In Progress':0, 'For Approval':0, 'Scheduled':0, 'Posted':0};
+                    data.forEach(post => { if(statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++; });
+                    const singleDataset = [{ label: selectedPlatform, data: Object.values(statusCounts), backgroundColor: platformColors[selectedPlatform] || platformColors.default }];
+                    statusChart = new Chart('statusChart', { type: 'bar', data: { labels: statuses, datasets: singleDataset }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: {color: chartColors.text}, grid:{color:chartColors.border} }, y: { ticks: {color: chartColors.text}, grid:{color:chartColors.border} } } } });
+                }
             }
 
             onAuthStateChanged(auth, user => {
