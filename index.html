@@ -244,22 +244,23 @@
                 const weekStart = currentWeekStartDate;
                 const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 7));
                 
-                // FIXED: More reliable timezone-safe date parsing
+                // FIXED: Added a robust, timezone-safe check for post dates to prevent crashes.
                 const postsInDateRange = posts.filter(p => {
+                    if (!p.publishDate || typeof p.publishDate !== 'string' || !p.publishDate.includes('-')) return false;
                     const parts = p.publishDate.split('-');
+                    if (parts.length !== 3) return false;
                     const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
-                    return d >= weekStart && d < weekEnd;
+                    return d instanceof Date && !isNaN(d) && d >= weekStart && d < weekEnd;
                 });
                 
-                const postsForCharts = (globalPreferences.platformFilter === 'All Platforms') ? postsInDateRange : postsInDateRange.filter(p => p.platforms.includes(globalPreferences.platformFilter));
-                const filteredWeeklyPosts = postsInDateRange.filter(p => (globalPreferences.platformFilter === 'All Platforms' || p.platforms.includes(globalPreferences.platformFilter)) && (globalPreferences.statusFilter === 'All Statuses' || p.status === globalPreferences.statusFilter));
-                const allTimePosted = posts.filter(p => p.status === 'Posted' && (globalPreferences.platformFilter === 'All Platforms' || p.platforms.includes(globalPreferences.platformFilter)));
+                const postsForCharts = (globalPreferences.platformFilter === 'All Platforms') ? postsInDateRange : postsInDateRange.filter(p => p.platforms && p.platforms.includes(globalPreferences.platformFilter));
+                const filteredWeeklyPosts = postsInDateRange.filter(p => (globalPreferences.platformFilter === 'All Platforms' || (p.platforms && p.platforms.includes(globalPreferences.platformFilter))) && (globalPreferences.statusFilter === 'All Statuses' || p.status === globalPreferences.statusFilter));
+                const allTimePosted = posts.filter(p => p.status === 'Posted' && (globalPreferences.platformFilter === 'All Platforms' || (p.platforms && p.platforms.includes(globalPreferences.platformFilter))));
                 const orderedDays = (globalPreferences.weekStartDay === 'Monday') ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 
                 ui.currentWeekDisplay.textContent = `${weekStart.toLocaleDateString()} - ${new Date(new Date(weekStart).setDate(weekStart.getDate() + 6)).toLocaleDateString()}`;
                 ['currentWeekGrid', 'postedDailyGrid', 'allPostedContentContainer'].forEach(id => ui[id].innerHTML = '');
 
-                // FIXED: More robust DOM creation for day columns
                 for (let i = 0; i < 7; i++) {
                     const dayCol = document.createElement('div');
                     dayCol.className = 'day-column rounded-lg p-2 space-y-2';
@@ -318,6 +319,9 @@
                         posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                         populateFilters();
                         renderAllContent();
+                    }, (error) => {
+                        console.error("Error fetching posts:", error);
+                        alert("Could not load posts. Check Firestore rules and internet connection.");
                     });
                 } else { signInAnonymously(auth).catch(e => console.error("Anonymous sign-in failed", e)); }
             });
