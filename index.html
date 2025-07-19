@@ -138,7 +138,7 @@
             <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">Weekly Analytics Overview</h2>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="analytics-card p-4 rounded-xl"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="platformChart"></canvas></div></div>
-                <div class="analytics-card p-4 rounded-xl"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="statusChart"></canvas></div></div>
+                <div class="analytics-card p-4 rounded-xl"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status by Platform</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="statusChart"></canvas></div></div>
             </div>
         </section>
 
@@ -193,6 +193,12 @@
 
             const ui = { platformFilter: document.getElementById('platformFilter'), statusFilter: document.getElementById('statusFilter'), weekStartDayFilter: document.getElementById('weekStartDayFilter'), darkModeToggle: document.getElementById('darkModeToggle'), currentWeekDisplay: document.getElementById('currentWeekDisplay'), currentWeekGrid: document.getElementById('current-week-grid'), postedDailyGrid: document.getElementById('posted-daily-grid'), allPostedContentContainer: document.getElementById('all-posted-content-container'), addPostBtn: document.getElementById('addPostBtn'), loggedInUserDisplay: document.getElementById('loggedInUserDisplay'), currentUserIdDisplay: document.getElementById('currentUserIdDisplay'), adminLoginBtn: document.getElementById('adminLoginBtn'), adminLogoutBtn: document.getElementById('adminLogoutBtn'), postModal: document.getElementById('postModal'), postForm: document.getElementById('postForm'), modalTitle: document.getElementById('modalTitle'), cancelBtn: document.getElementById('cancelBtn'), deleteConfirmModal: document.getElementById('deleteConfirmModal'), confirmDeleteBtn: document.getElementById('confirmDeleteBtn'), cancelDeleteBtn: document.getElementById('cancelDeleteBtn'), loginModal: document.getElementById('loginModal'), submitLoginBtn: document.getElementById('submitLoginBtn'), cancelLoginBtn: document.getElementById('cancelLoginBtn'), adminPasswordInput: document.getElementById('adminPassword'), loginError: document.getElementById('loginError'), prevWeekBtn: document.getElementById('prevWeekBtn'), nextWeekBtn: document.getElementById('nextWeekBtn') };
 
+            const platformColors = {
+                'Facebook': '#1877F2', 'Instagram': '#E4405F', 'TikTok': '#000000',
+                'Blog': '#FF5722', 'LinkedIn': '#0A66C2', 'X': '#000000',
+                'Behance': '#0057FF', 'YouTube': '#FF0000', 'default': '#64748b'
+            };
+
             function getWeekStartDate(d, startDayName) {
                 d = new Date(d); d.setHours(0, 0, 0, 0);
                 const day = d.getDay();
@@ -221,25 +227,19 @@
                 return card;
             }
             
-            // MODIFIED: Added this new function to populate the platform filter
             function populateFilters() {
                 const allPlatforms = new Set();
                 posts.forEach(post => {
                     if (post.platforms) post.platforms.forEach(p => allPlatforms.add(p));
                 });
-
                 const currentFilterValue = ui.platformFilter.value;
-                while (ui.platformFilter.options.length > 1) {
-                    ui.platformFilter.remove(1);
-                }
-
+                while (ui.platformFilter.options.length > 1) { ui.platformFilter.remove(1); }
                 Array.from(allPlatforms).sort().forEach(platform => {
                     const option = document.createElement('option');
                     option.value = platform;
                     option.textContent = platform;
                     ui.platformFilter.appendChild(option);
                 });
-                
                 ui.platformFilter.value = currentFilterValue;
             }
 
@@ -273,7 +273,50 @@
                 updateAdminUI();
             }
 
-            function renderCharts(data) { const isDarkMode = document.documentElement.classList.contains('dark'); const colors = { text: isDarkMode ? '#94a3b8' : '#475569', border: isDarkMode ? '#475569' : '#e2e8f0' }; const statusCounts = {'To Do':0, 'In Progress':0, 'For Approval':0, 'Scheduled':0, 'Posted':0}; const platformCounts = {}; data.forEach(post => { if(statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++; post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1); }); if(platformChart) platformChart.destroy(); platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: colors.text } } } } }); if(statusChart) statusChart.destroy(); statusChart = new Chart('statusChart', { type: 'bar', data: { labels: Object.keys(statusCounts), datasets: [{ label: 'Posts', data: Object.values(statusCounts) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: {color: colors.text}, grid:{color:colors.border} }, y: { ticks: {color: colors.text}, grid:{color:colors.border} } } } }); }
+            // MODIFIED: This function is completely rewritten for the stacked bar chart.
+            function renderCharts(data) {
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                const chartColors = { text: isDarkMode ? '#94a3b8' : '#475569', border: isDarkMode ? '#475569' : '#e2e8f0' };
+
+                // Doughnut chart logic (unchanged)
+                const platformCounts = {};
+                data.forEach(post => post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1));
+                if(platformChart) platformChart.destroy();
+                platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts), backgroundColor: Object.keys(platformCounts).map(p => platformColors[p] || platformColors.default) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartColors.text } } } } });
+
+                // Stacked bar chart logic (new)
+                const statuses = ['To Do', 'In Progress', 'For Approval', 'Scheduled', 'Posted'];
+                const platformsInData = [...new Set(data.flatMap(p => p.platforms))].sort();
+
+                const statusDatasets = platformsInData.map(platform => {
+                    const counts = statuses.map(status => {
+                        return data.filter(post => post.status === status && post.platforms.includes(platform)).length;
+                    });
+                    return {
+                        label: platform,
+                        data: counts,
+                        backgroundColor: platformColors[platform] || platformColors.default,
+                    };
+                });
+
+                if(statusChart) statusChart.destroy();
+                statusChart = new Chart('statusChart', {
+                    type: 'bar',
+                    data: {
+                        labels: statuses,
+                        datasets: statusDatasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: chartColors.text } } },
+                        scales: {
+                            x: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} },
+                            y: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} }
+                        }
+                    }
+                });
+            }
 
             onAuthStateChanged(auth, user => {
                 if (user) {
@@ -281,7 +324,6 @@
                     ui.currentUserIdDisplay.textContent = `UID: ${user.uid.slice(0, 6)}...`;
                     onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), snap => {
                         posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                        // MODIFIED: Call populateFilters whenever data changes
                         populateFilters();
                         renderAllContent();
                     });
