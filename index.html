@@ -10,13 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Slackey&display=swap" rel="stylesheet">
     <script type="module">
         // Import the functions you need from the SDKs you need
-        // Updated Firebase SDK versions to 12.0.0 as per user's provided script
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-        // Your web app's Firebase configuration - INSERTED USER'S PROVIDED CONFIG HERE
+        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAqOoWBpthRQBI7Xgi-co3-Wrf8jX_nPnY",
             authDomain: "contentcalendar-10154.firebaseapp.com",
@@ -28,23 +27,21 @@
         };
 
         // Define global variables for Firebase config and app ID
-        // We use firebaseConfig.projectId as the appId for consistency with Firestore paths
         const appId = firebaseConfig.projectId;
-        // initialAuthToken is typically provided by the Canvas environment, keep as is.
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app); // Initialize analytics as requested
+        const analytics = getAnalytics(app);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Make Firebase instances globally accessible within the script scope
+        // Make Firebase instances globally accessible
         window.firebaseApp = app;
         window.firebaseDb = db;
         window.firebaseAuth = auth;
         window.firebaseInitialAuthToken = initialAuthToken;
-        window.firebaseAppId = appId; // Make appId globally accessible
+        window.firebaseAppId = appId;
         window.firebaseDoc = doc;
         window.firebaseGetDoc = getDoc;
         window.firebaseSetDoc = setDoc;
@@ -63,7 +60,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9; /* Slightly darker light background for better contrast */
+            background-color: #f1f5f9;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
         .chart-container {
@@ -72,10 +69,9 @@
             max-width: 450px;
             margin-left: auto;
             margin-right: auto;
-            /* Responsive height handled by Tailwind classes on the div itself */
         }
         .day-column {
-            min-height: 250px; /* Reduced height for two weeks to fit better */
+            min-height: 250px;
         }
         .modal-bg {
             background-color: rgba(0,0,0,0.5);
@@ -91,21 +87,19 @@
 
         /* Dark Mode Styles */
         .dark {
-            background-color: #1a202c; /* Dark background for body */
-            color: #e2e8f0; /* Light text for body */
-        }
-        .dark .text-slate-800 { color: #e2e8f0; }
-        .dark .text-slate-600 { color: #cbd5e1; } /* Light gray for secondary text */
-        .dark .bg-white { background-color: #2d3748; } /* Darker background for cards/sections */
-        .dark .bg-slate-200 { /* For platform tags */
-            background-color: #4a5568; /* Darker gray */
+            background-color: #1a202c;
             color: #e2e8f0;
         }
-        /* Day column background in dark mode */
-        .dark .day-column {
-            background-color: #2d3748; /* Darker background for day columns */
+        .dark .text-slate-800 { color: #e2e8f0; }
+        .dark .text-slate-600 { color: #cbd5e1; }
+        .dark .bg-white { background-color: #2d3748; }
+        .dark .bg-slate-200 {
+            background-color: #4a5568;
+            color: #e2e8f0;
         }
-        /* Dark mode custom brand colors override */
+        .dark .day-column {
+            background-color: #2d3748;
+        }
         .dark .text-brand-charcoal { color: #e2e8f0; }
         .dark .bg-brand-charcoal { background-color: #1f2937; }
         .dark .text-brand-soft-blue { color: #94a3b8; }
@@ -113,40 +107,36 @@
         .dark .text-brand-coral { color: #fca5a5; }
         .dark .bg-brand-coral { background-color: #be123c; }
 
-        /* Status colors in dark mode - keep them distinct but adjust for dark background */
-        .dark .bg-rose-200 { background-color: #991b1b; } /* Darker rose */
-        .dark .text-rose-800 { color: #fecaca; } /* Lighter rose text */
-        .dark .bg-amber-200 { background-color: #92400e; } /* Darker amber */
-        .dark .text-amber-800 { color: #fcd34d; } /* Lighter amber text */
-        .dark .bg-sky-200 { background-color: #0c4a6e; } /* Darker sky */
-        .dark .text-sky-800 { color: #bae6fd; } /* Lighter sky text */
-        .dark .bg-emerald-200 { background-color: #065f46; } /* Darker emerald for 'Posted' */
-        .dark .text-emerald-800 { color: #a7f3d0; } /* Lighter emerald text for 'Posted' */
-        /* New status color for Approval */
-        .bg-violet-200 { background-color: #e0cffc; } /* Light violet */
-        .text-violet-800 { color: #5b21b6; } /* Dark violet text */
-        .dark .bg-violet-200 { background-color: #6d28d9; } /* Darker violet for dark mode */
-        .dark .text-violet-800 { color: #d8b4fe; } /* Lighter violet text for dark mode */
+        .dark .bg-rose-200 { background-color: #991b1b; }
+        .dark .text-rose-800 { color: #fecaca; }
+        .dark .bg-amber-200 { background-color: #92400e; }
+        .dark .text-amber-800 { color: #fcd34d; }
+        .dark .bg-sky-200 { background-color: #0c4a6e; }
+        .dark .text-sky-800 { color: #bae6fd; }
+        .dark .bg-emerald-200 { background-color: #065f46; }
+        .dark .text-emerald-800 { color: #a7f3d0; }
+        .bg-violet-200 { background-color: #e0cffc; }
+        .text-violet-800 { color: #5b21b6; }
+        .dark .bg-violet-200 { background-color: #6d28d9; }
+        .dark .text-violet-800 { color: #d8b4fe; }
 
-        /* Platform specific colors */
         .bg-facebook { background-color: #1877F2; }
         .text-facebook { color: #FFFFFF; }
         .bg-instagram { background-color: #E4405F; }
         .text-instagram { color: #FFFFFF; }
         .bg-tiktok { background-color: #000000; }
         .text-tiktok { color: #FFFFFF; }
-        .bg-blog { background-color: #FF5722; } /* Orange for Blog */
+        .bg-blog { background-color: #FF5722; }
         .text-blog { color: #FFFFFF; }
         .bg-linkedin { background-color: #0A66C2; }
         .text-linkedin { color: #FFFFFF; }
-        .bg-x { background-color: #000000; } /* Black for X (Twitter) */
+        .bg-x { background-color: #000000; }
         .text-x { color: #FFFFFF; }
-        .bg-behance { background-color: #0057FF; } /* Blue for Behance */
+        .bg-behance { background-color: #0057FF; }
         .text-behance { color: #FFFFFF; }
-        .bg-youtube { background-color: #FF0000; } /* Red for YouTube */
+        .bg-youtube { background-color: #FF0000; }
         .text-youtube { color: #FFFFFF; }
 
-        /* Dark mode platform colors - adjust for better visibility */
         .dark .bg-facebook { background-color: #3b5998; }
         .dark .bg-instagram { background-color: #C13584; }
         .dark .bg-tiktok { background-color: #222222; }
@@ -156,24 +146,18 @@
         .dark .bg-behance { background-color: #3C69E7; }
         .dark .bg-youtube { background-color: #CC0000; }
 
-
-        /* Dark mode toggle switch dot position */
         #darkModeToggle:checked + div .dot {
             transform: translateX(20px);
         }
-
-        /* Light Mode Day Column Backgrounds */
         .day-column.light-mode-weekday {
-            background-color: #e0f2fe; /* A specific light blue for weekdays */
+            background-color: #e0f2fe;
         }
         .day-column.light-mode-weekend {
-            background-color: #e0f7fa; /* A slightly different light blue for weekends */
+            background-color: #e0f7fa;
         }
-
-        /* Updated: Western Font for Main Title - Using 'Slackey' */
         .western-font {
-            font-family: 'Slackey', cursive, sans-serif; /* Applied new font with fallbacks */
-            text-shadow: 2px 2px 3px rgba(0,0,0,0.4); /* Added a subtle shadow for pop */
+            font-family: 'Slackey', cursive, sans-serif;
+            text-shadow: 2px 2px 3px rgba(0,0,0,0.4);
         }
     </style>
 </head>
@@ -182,7 +166,7 @@
     <div class="container mx-auto p-4 md:p-8">
 
         <header class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-brand-charcoal western-font">The Content Cowbot Interactive Calendar</h1>
+            <h1 class="text-4xl md:text-5xl font-bold text-brand-charcoal western-font">Content Cowboy Interactive Calendar</h1>
             <p class="text-slate-600 mt-2 text-base md:text-lg">A dynamic view of your weekly content schedule.</p>
         </header>
 
@@ -270,8 +254,8 @@
             </div>
         </section>
         <section id="analytics" class="mb-8">
-            <h2 class="text-2xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">Analytics Overview</h2>
-            <p class="text-slate-600 text-center mb-6 text-base md:text-lg">This section provides a high-level summary of your content plan. The charts below are fully dynamic and will update automatically as you add, edit, or filter your content in the calendar grid, giving you immediate visual feedback on your strategy.</p>
+            <h2 class="text-2xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">Weekly Analytics Overview</h2>
+            <p class="text-slate-600 text-center mb-6 text-base md:text-lg">The charts below are fully dynamic and reflect the content planned or posted for the currently selected week. They will update as you navigate between weeks or apply filters.</p>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div class="bg-white p-6 rounded-xl shadow-sm">
                     <h3 class="text-lg md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution by Platform</h3>
@@ -394,35 +378,11 @@
 
 
     <script>
-        // IMPORTANT FIRESTORE SECURITY RULES:
-        // To allow public read/write access for authenticated users (including anonymous ones)
-        // to the 'posts', 'customWeeklyTitles', AND 'globalPreferences' collections,
-        // you MUST set the following rules in your Firebase project's Firestore Database -> Rules section:
-        /*
-        rules_version = '2';
-        service cloud.firestore {
-          match /databases/{database}/documents {
-            // Allow read and write access to public data for any authenticated user
-            match /artifacts/{appId}/public/data/{collectionId}/{documentId} {
-              allow read, write: if request.auth != null;
-            }
-          }
-        }
-        */
-        // Replace {appId} with your actual Firebase Project ID (e.g., 'contentcalendar-10154').
-        // Without these rules, you will get "Missing or insufficient permissions" errors.
-
-        // IMPORTANT FIREBASE AUTHENTICATION SETTINGS:
-        // To fix "Error (auth/configuration-not-found)", you MUST enable "Anonymous"
-        // as a sign-in provider in your Firebase project's Authentication -> Sign-in method tab.
-        // Your application uses anonymous authentication to allow all users to read data.
-
-
         document.addEventListener('DOMContentLoaded', async () => {
             // Admin password (for client-side demo purposes only - NOT secure for production)
             const ADMIN_PASSWORD = "contentcowboy123";
 
-            // --- Firebase Globals (from script type="module" above) ---
+            // --- Firebase Globals ---
             const app = window.firebaseApp;
             const db = window.firebaseDb;
             const auth = window.firebaseAuth;
@@ -442,14 +402,12 @@
             const signInAnonymously = window.firebaseSignInAnonymously;
             const signInWithCustomToken = window.firebaseSignInWithCustomToken;
             const onAuthStateChanged = window.firebaseOnAuthStateChanged;
-            // --- End Firebase Globals ---
 
-            let posts = []; // This will now be populated by Firestore
-            let customWeeklyTitles = {}; // This will now be populated by Firestore
+            let posts = [];
+            let customWeeklyTitles = {};
             let currentUserId = null;
-            let isAdminLoggedIn = false; // Initial state
+            let isAdminLoggedIn = false;
 
-            // Global preferences from Firestore
             let globalPreferences = {
                 platformFilter: 'All Platforms',
                 statusFilter: 'All Statuses',
@@ -500,30 +458,18 @@
             let platformChart, statusChart;
 
             const statusColors = {
-                'To Do': 'bg-rose-200',
-                'In Progress': 'bg-amber-200',
-                'Scheduled': 'bg-sky-200',
-                'Posted': 'bg-emerald-200',
-                'For Approval': 'bg-violet-200',
+                'To Do': 'bg-rose-200', 'In Progress': 'bg-amber-200',
+                'Scheduled': 'bg-sky-200', 'Posted': 'bg-emerald-200', 'For Approval': 'bg-violet-200',
             };
-
             const statusTextColors = {
-                'To Do': 'text-rose-800',
-                'In Progress': 'text-amber-800',
-                'Scheduled': 'text-sky-800',
-                'Posted': 'text-emerald-800',
-                'For Approval': 'text-violet-800',
+                'To Do': 'text-rose-800', 'In Progress': 'text-amber-800',
+                'Scheduled': 'text-sky-800', 'Posted': 'text-emerald-800', 'For Approval': 'text-violet-800',
             };
-
             const platformTagColors = {
-                'Facebook': { bg: 'bg-facebook', text: 'text-facebook' },
-                'Instagram': { bg: 'bg-instagram', text: 'text-instagram' },
-                'TikTok': { bg: 'bg-tiktok', text: 'text-tiktok' },
-                'Blog': { bg: 'bg-blog', text: 'text-blog' },
-                'LinkedIn': { bg: 'bg-linkedin', text: 'text-linkedin' },
-                'X': { bg: 'bg-x', text: 'text-x' },
-                'Behance': { bg: 'bg-behance', text: 'text-behance' },
-                'YouTube': { bg: 'bg-youtube', text: 'text-youtube' },
+                'Facebook': { bg: 'bg-facebook', text: 'text-facebook' }, 'Instagram': { bg: 'bg-instagram', text: 'text-instagram' },
+                'TikTok': { bg: 'bg-tiktok', text: 'text-tiktok' }, 'Blog': { bg: 'bg-blog', text: 'text-blog' },
+                'LinkedIn': { bg: 'bg-linkedin', text: 'text-linkedin' }, 'X': { bg: 'bg-x', text: 'text-x' },
+                'Behance': { bg: 'bg-behance', text: 'text-behance' }, 'YouTube': { bg: 'bg-youtube', text: 'text-youtube' },
                 'default': { bg: 'bg-slate-200', text: 'text-slate-700' }
             };
 
@@ -531,42 +477,23 @@
                 if (isDarkMode) {
                     return {
                         platforms: ['#94a3b8', '#fca5a5', '#e2e8f0', '#a78bfa', '#fbcfe8', '#f87171', '#c4b5fd', '#60a5fa'],
-                        statuses: {
-                            'To Do': '#fca5a5',
-                            'In Progress': '#94a3b8',
-                            'Scheduled': '#e2e8f0',
-                            'Posted': '#a7f3d0',
-                            'For Approval': '#d8b4fe'
-                        }
+                        statuses: { 'To Do': '#fca5a5', 'In Progress': '#94a3b8', 'Scheduled': '#e2e8f0', 'Posted': '#a7f3d0', 'For Approval': '#d8b4fe' }
                     };
                 } else {
                     return {
                         platforms: ['#ADD8E6', '#FF7F50', '#333333', '#6366f1', '#ec4899', '#ef4444', '#8b5cf6', '#3b82f6'],
-                        statuses: {
-                            'To Do': '#FF7F50',
-                            'In Progress': '#ADD8E6',
-                            'Scheduled': '#333333',
-                            'Posted': '#10b981',
-                            'For Approval': '#5b21b6'
-                        }
+                        statuses: { 'To Do': '#FF7F50', 'In Progress': '#ADD8E6', 'Scheduled': '#333333', 'Posted': '#10b981', 'For Approval': '#5b21b6' }
                     };
                 }
             }
 
-            // `preferredWeekStartDay` will now be managed by `globalPreferences`
             let currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
 
             function getWeekStartDate(d, startDayName) {
                 d = new Date(d);
                 d.setHours(0, 0, 0, 0);
                 const day = d.getDay();
-                let diff = 0;
-
-                if (startDayName === 'Monday') {
-                    diff = d.getDate() - day + (day === 0 ? -6 : 1);
-                } else {
-                    diff = d.getDate() - day;
-                }
+                let diff = (startDayName === 'Monday') ? d.getDate() - day + (day === 0 ? -6 : 1) : d.getDate() - day;
                 const newDate = new Date(d.setDate(diff));
                 newDate.setHours(0, 0, 0, 0);
                 return newDate;
@@ -577,7 +504,7 @@
             }
 
             function getWeekRangeText(date) {
-                const start = getWeekStartDate(new Date(date), globalPreferences.weekStartDay); // Use global preference
+                const start = getWeekStartDate(new Date(date), globalPreferences.weekStartDay);
                 const end = new Date(start);
                 end.setDate(start.getDate() + 6);
                 const options = { month: 'long', day: 'numeric', year: 'numeric' };
@@ -585,52 +512,26 @@
             }
 
             function getCurrentWeekId() {
-                const weekStartDateFormatted = formatDate(currentWeekStartDate);
-                return `${weekStartDateFormatted}-${globalPreferences.weekStartDay}Start`; // Use global preference
+                return `${formatDate(currentWeekStartDate)}-${globalPreferences.weekStartDay}Start`;
             }
 
             function getOrderedDaysOfWeek(startDayName) {
                 const allDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                if (startDayName === 'Monday') {
-                    return [...allDays.slice(1), allDays[0]];
-                }
-                return allDays;
+                return (startDayName === 'Monday') ? [...allDays.slice(1), allDays[0]] : allDays;
             }
 
             function createPostCard(post) {
                 const card = document.createElement('div');
                 card.className = 'bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow relative';
                 card.dataset.id = post.id;
-
                 const platformsHtml = post.platforms.map(p => {
                     const colors = platformTagColors[p] || platformTagColors['default'];
                     return `<span class="inline-block ${colors.bg} ${colors.text} text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">${p}</span>`;
                 }).join('');
-
-                card.innerHTML = `
-                    <h4 class="font-bold text-brand-charcoal mb-2">${post.topic}</h4>
-                    <div class="mb-3">${platformsHtml}</div>
-                    <p class="text-sm text-slate-600 mb-3"><strong>Type:</strong> ${post.type}</p>
-                    <div class="text-sm font-semibold inline-flex items-center px-3 py-1 rounded-full ${statusColors[post.status]} ${statusTextColors[post.status]}">
-                        ${post.status}
-                    </div>
-                    ${post.resources ? `<p class="text-sm text-slate-600 mt-2"><strong>Resources:</strong> <a href="${post.resources}" target="_blank" class="text-blue-500 hover:underline">${post.resources.length > 30 ? post.resources.substring(0, 27) + '...' : post.resources}</a></p>` : ''}
-                    ${post.outputLink && post.status === 'Posted' ? `<p class="text-sm mt-2"><button onclick="window.open('${post.outputLink}', '_blank')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-full text-xs transition-colors">View Post</button></p>` : ''}
-                    ${isAdminLoggedIn ? `
-                    <button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 delete-post-btn" data-id="${post.id}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                    ` : ''}
-                `;
+                card.innerHTML = `<h4 class="font-bold text-brand-charcoal mb-2">${post.topic}</h4><div class="mb-3">${platformsHtml}</div><p class="text-sm text-slate-600 mb-3"><strong>Type:</strong> ${post.type}</p><div class="text-sm font-semibold inline-flex items-center px-3 py-1 rounded-full ${statusColors[post.status]} ${statusTextColors[post.status]}">${post.status}</div>${post.resources ? `<p class="text-sm text-slate-600 mt-2"><strong>Resources:</strong> <a href="${post.resources}" target="_blank" class="text-blue-500 hover:underline">${post.resources.length > 30 ? post.resources.substring(0, 27) + '...' : post.resources}</a></p>` : ''}${post.outputLink && post.status === 'Posted' ? `<p class="text-sm mt-2"><button onclick="window.open('${post.outputLink}', '_blank')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-full text-xs transition-colors">View Post</button></p>` : ''}${isAdminLoggedIn ? `<button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 delete-post-btn" data-id="${post.id}"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>` : ''}`;
                 card.addEventListener('click', (e) => {
                     if (!e.target.closest('.delete-post-btn')) {
-                        if (isAdminLoggedIn) {
-                            openModal(post);
-                        } else {
-                            showLoginModal();
-                        }
+                        if (isAdminLoggedIn) openModal(post); else showLoginModal();
                     }
                 });
                 if (isAdminLoggedIn) {
@@ -659,7 +560,6 @@
                     try {
                         const postRef = doc(db, `artifacts/${appId}/public/data/posts`, String(postIdToDelete));
                         await deleteDoc(postRef);
-                        // onSnapshot listener will handle re-rendering
                         hideDeleteConfirm();
                     } catch (e) {
                         console.error("Error deleting document: ", e);
@@ -669,60 +569,36 @@
             }
 
             function getFilteredPosts() {
-                // Use global preferences for filtering
                 const selectedPlatform = globalPreferences.platformFilter;
                 const selectedStatus = globalPreferences.statusFilter;
-
                 const weekStart = new Date(currentWeekStartDate);
                 weekStart.setHours(0, 0, 0, 0);
-
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekStart.getDate() + 7);
-                weekEnd.setHours(0, 0, 0, 0);
-
-                const allPostsFilteredByPlatform = posts.filter(post => {
-                    return selectedPlatform === 'All Platforms' || (post.platforms && post.platforms.includes(selectedPlatform));
-                });
-
-                let currentWeekNonPosted = allPostsFilteredByPlatform.filter(post =>
-                    post.status !== 'Posted' &&
-                    new Date(post.publishDate).setHours(0,0,0,0) >= weekStart.getTime() &&
-                    new Date(post.publishDate).setHours(0,0,0,0) < weekEnd.getTime()
-                );
+                const allPostsFilteredByPlatform = posts.filter(p => selectedPlatform === 'All Platforms' || (p.platforms && p.platforms.includes(selectedPlatform)));
+                let currentWeekNonPosted = allPostsFilteredByPlatform.filter(p => p.status !== 'Posted' && new Date(p.publishDate).setHours(0,0,0,0) >= weekStart.getTime() && new Date(p.publishDate).setHours(0,0,0,0) < weekEnd.getTime());
                 if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
-                    currentWeekNonPosted = currentWeekNonPosted.filter(post => post.status === selectedStatus);
+                    currentWeekNonPosted = currentWeekNonPosted.filter(p => p.status === selectedStatus);
                 }
-
-                let currentWeekPostedByDay = allPostsFilteredByPlatform.filter(post =>
-                    post.status === 'Posted' &&
-                    new Date(post.publishDate).setHours(0,0,0,0) >= weekStart.getTime() &&
-                    new Date(post.publishDate).setHours(0,0,0,0) < weekEnd.getTime()
-                );
+                let currentWeekPostedByDay = allPostsFilteredByPlatform.filter(p => p.status === 'Posted' && new Date(p.publishDate).setHours(0,0,0,0) >= weekStart.getTime() && new Date(p.publishDate).setHours(0,0,0,0) < weekEnd.getTime());
                 if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
                     currentWeekPostedByDay = [];
                 }
-
-                let allTimePosted = posts.filter(post => post.status === 'Posted');
+                let allTimePosted = posts.filter(p => p.status === 'Posted');
                 if (selectedPlatform !== 'All Platforms') {
-                    allTimePosted = allTimePosted.filter(post => (post.platforms && post.platforms.includes(selectedPlatform)));
+                    allTimePosted = allTimePosted.filter(p => (p.platforms && p.platforms.includes(selectedPlatform)));
                 }
                 if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
                     allTimePosted = [];
                 }
-                
-                return {
-                    currentWeekNonPosted: currentWeekNonPosted,
-                    currentWeekPostedByDay: currentWeekPostedByDay,
-                    allTimePosted: allTimePosted
-                };
+                return { currentWeekNonPosted, currentWeekPostedByDay, allTimePosted };
             }
 
             function renderAllContent() {
-                const orderedDays = getOrderedDaysOfWeek(globalPreferences.weekStartDay); // Use global preference
+                const orderedDays = getOrderedDaysOfWeek(globalPreferences.weekStartDay);
                 const currentWeekRangeText = getWeekRangeText(currentWeekStartDate);
                 const weekId = getCurrentWeekId();
                 const isDarkMode = document.documentElement.classList.contains('dark');
-
                 const customTitle = customWeeklyTitles[weekId];
                 if (customTitle) {
                     currentWeekPlannedTitle.textContent = customTitle;
@@ -733,15 +609,11 @@
                     currentWeekPostedTitle.textContent = currentWeekRangeText;
                     customWeeklyTitleInput.value = '';
                 }
-                
                 currentWeekDisplay.textContent = currentWeekRangeText;
                 currentUserIdDisplay.textContent = currentUserId ? `User ID: ${currentUserId}` : '';
-
-                // Set filter dropdowns based on global preferences
                 platformFilter.value = globalPreferences.platformFilter;
                 statusFilter.value = globalPreferences.statusFilter;
                 weekStartDayFilter.value = globalPreferences.weekStartDay;
-
 
                 const currentWeekGrid = document.getElementById('current-week-grid');
                 currentWeekGrid.innerHTML = '';
@@ -752,44 +624,16 @@
 
                 for (let i = 0; i < 7; i++) {
                     const dayColumn = document.createElement('div');
-                    dayColumn.id = `current-week-day-column-${i}`;
-                    
-                    let dayClasses = `rounded-lg p-4 day-column`;
-                    if (isDarkMode) {
-                        dayClasses += ` dark:bg-gray-700`;
-                        if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
-                            dayClasses += ` dark:bg-gray-800`;
-                        }
-                    } else {
-                        dayClasses += ` light-mode-weekday`;
-                        if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
-                            dayClasses += ` light-mode-weekend`;
-                        }
-                    }
+                    let dayClasses = `rounded-lg p-4 day-column ${isDarkMode ? (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday' ? 'dark:bg-gray-800' : 'dark:bg-gray-700') : (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday' ? 'light-mode-weekend' : 'light-mode-weekday')}`;
                     dayColumn.className = dayClasses;
-
                     dayColumn.innerHTML = `<h3 class="font-bold text-xl md:text-2xl mb-4 text-center text-brand-charcoal">${orderedDays[i]}</h3><div id="current-week-day-content-${i}" class="space-y-4"></div>`;
                     currentWeekGrid.appendChild(dayColumn);
                 }
 
                 for (let i = 0; i < 7; i++) {
                     const dayColumn = document.createElement('div');
-                    dayColumn.id = `posted-daily-day-column-${i}`;
-                    
-                    let dayClasses = `rounded-lg p-4 day-column`;
-                    if (isDarkMode) {
-                        dayClasses += ` dark:bg-gray-700`;
-                        if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
-                            dayClasses += ` dark:bg-gray-800`;
-                        }
-                    } else {
-                        dayClasses += ` light-mode-weekday`;
-                        if (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday') {
-                            dayClasses += ` light-mode-weekend`;
-                        }
-                    }
+                     let dayClasses = `rounded-lg p-4 day-column ${isDarkMode ? (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday' ? 'dark:bg-gray-800' : 'dark:bg-gray-700') : (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday' ? 'light-mode-weekend' : 'light-mode-weekday')}`;
                     dayColumn.className = dayClasses;
-
                     dayColumn.innerHTML = `<h3 class="font-bold text-xl md:text-2xl mb-4 text-center text-brand-charcoal">${orderedDays[i]}</h3><div id="posted-daily-day-content-${i}" class="space-y-4"></div>`;
                     postedDailyGrid.appendChild(dayColumn);
                 }
@@ -799,152 +643,68 @@
                 currentWeekNonPosted.forEach(post => {
                     const postDate = new Date(post.publishDate);
                     postDate.setHours(0,0,0,0);
-                    
-                    const startOfWeekOfPost = getWeekStartDate(postDate, globalPreferences.weekStartDay); // Use global preference
-                    const diffTime = postDate.getTime() - startOfWeekOfPost.getTime();
-                    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
+                    const startOfWeekOfPost = getWeekStartDate(postDate, globalPreferences.weekStartDay);
+                    const diffDays = Math.round((postDate - startOfWeekOfPost) / (1000 * 60 * 60 * 24));
                     const container = document.getElementById(`current-week-day-content-${diffDays}`);
-                    if (container) {
-                        container.appendChild(createPostCard(post));
-                    }
+                    if (container) container.appendChild(createPostCard(post));
                 });
 
                 currentWeekPostedByDay.forEach(post => {
                     const postDate = new Date(post.publishDate);
                     postDate.setHours(0,0,0,0);
-                    
-                    const startOfWeekOfPost = getWeekStartDate(postDate, globalPreferences.weekStartDay); // Use global preference
-                    const diffTime = postDate.getTime() - startOfWeekOfPost.getTime();
-                    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
+                    const startOfWeekOfPost = getWeekStartDate(postDate, globalPreferences.weekStartDay);
+                    const diffDays = Math.round((postDate - startOfWeekOfPost) / (1000 * 60 * 60 * 24));
                     const container = document.getElementById(`posted-daily-day-content-${diffDays}`);
-                    if (container) {
-                        container.appendChild(createPostCard(post));
-                    }
+                    if (container) container.appendChild(createPostCard(post));
                 });
 
                 allTimePosted.forEach(post => {
-                    if (allPostedContentContainer) {
-                        allPostedContentContainer.appendChild(createPostCard(post));
-                    }
+                    if (allPostedContentContainer) allPostedContentContainer.appendChild(createPostCard(post));
                 });
 
-                const allVisiblePostsForCharts = [...currentWeekNonPosted, ...currentWeekPostedByDay, ...allTimePosted];
-                renderCharts(allVisiblePostsForCharts);
+                // MODIFIED: This now passes ONLY the current week's posts to the charts.
+                const weeklyPostsForCharts = [...currentWeekNonPosted, ...currentWeekPostedByDay];
+                renderCharts(weeklyPostsForCharts);
+                
                 updateAdminUI();
             }
 
             function renderCharts(data) {
                 const isDarkMode = document.documentElement.classList.contains('dark');
                 const currentChartColors = getChartColors(isDarkMode);
-
                 const platformCounts = {};
                 data.forEach(post => {
-                    if (post.platforms) {
-                        post.platforms.forEach(p => {
-                            platformCounts[p] = (platformCounts[p] || 0) + 1;
-                        });
-                    }
+                    if (post.platforms) post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1);
                 });
-
                 const statusCounts = { 'To Do': 0, 'In Progress': 0, 'For Approval': 0, 'Scheduled': 0, 'Posted': 0 };
                 data.forEach(post => {
-                    if (statusCounts.hasOwnProperty(post.status)) {
-                        statusCounts[post.status]++;
-                    }
+                    if (statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++;
                 });
-
                 const platformCtx = document.getElementById('platformChart').getContext('2d');
                 if(platformChart) platformChart.destroy();
-                platformChart = new Chart(platformCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: Object.keys(platformCounts),
-                        datasets: [{
-                            data: Object.values(platformCounts),
-                            backgroundColor: currentChartColors.platforms,
-                            borderColor: isDarkMode ? '#2d3748' : '#fff',
-                            borderWidth: 2
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    color: isDarkMode ? '#e2e8f0' : '#333333'
-                                }
-                            }
-                        }
-                    }
-                });
-
+                platformChart = new Chart(platformCtx, { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts), backgroundColor: currentChartColors.platforms, borderColor: isDarkMode ? '#2d3748' : '#fff', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: isDarkMode ? '#e2e8f0' : '#333333' } } } } });
                 const statusCtx = document.getElementById('statusChart').getContext('2d');
                 if(statusChart) statusChart.destroy();
-                statusChart = new Chart(statusCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: Object.keys(statusCounts),
-                        datasets: [{
-                            label: 'Number of Posts',
-                            data: Object.values(statusCounts),
-                            backgroundColor: Object.values(currentChartColors.statuses),
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1,
-                                    color: isDarkMode ? '#e2e8f0' : '#333333'
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    color: isDarkMode ? '#e2e8f0' : '#333333'
-                                }
-                            }
-                        }
-                    }
-                });
+                statusChart = new Chart(statusCtx, { type: 'bar', data: { labels: Object.keys(statusCounts), datasets: [{ label: 'Number of Posts', data: Object.values(statusCounts), backgroundColor: Object.values(currentChartColors.statuses) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, color: isDarkMode ? '#e2e8f0' : '#333333' } }, x: { ticks: { color: isDarkMode ? '#e2e8f0' : '#333333' } } } } });
             }
 
             async function populateFilters() {
-                // Fetch all posts to get all unique platforms
                 try {
                     const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
                     const querySnapshot = await getDocs(postsCollectionRef);
                     const allPlatforms = new Set();
                     querySnapshot.forEach(doc => {
                         const post = doc.data();
-                        if (post.platforms) {
-                            post.platforms.forEach(pf => allPlatforms.add(pf));
-                        }
+                        if (post.platforms) post.platforms.forEach(pf => allPlatforms.add(pf));
                     });
-
                     platformFilter.innerHTML = '<option>All Platforms</option>';
                     Array.from(allPlatforms).sort().forEach(pf => {
                         const option = document.createElement('option');
                         option.textContent = pf;
                         platformFilter.appendChild(option);
                     });
-                    // Ensure the selected value in the dropdown matches the global preference
                     platformFilter.value = globalPreferences.platformFilter;
-
-                } catch (e) {
-                    console.error("Error populating filters:", e);
-                }
+                } catch (e) { console.error("Error populating filters:", e); }
             }
 
             function openModal(post = null) {
@@ -973,20 +733,15 @@
 
             function closeModal() {
                 modalContent.classList.remove('scale-100');
-                setTimeout(() => {
-                    modal.classList.add('hidden');
-                    modal.classList.remove('flex');
-                }, 300);
+                setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
             }
 
             async function handleFormSubmit(e) {
                 e.preventDefault();
                 const id = postIdInput.value;
-                const publishDate = publishDateInputModal.value;
-
                 const newPostData = {
                     topic: document.getElementById('contentTopic').value,
-                    publishDate: publishDate,
+                    publishDate: publishDateInputModal.value,
                     status: statusSelectModal.value,
                     platforms: platformsInputModal.value.split(',').map(p => p.trim()).filter(p => p !== ''),
                     type: document.getElementById('contentType').value,
@@ -994,28 +749,19 @@
                     outputLink: document.getElementById('outputLink').value,
                     notes: document.getElementById('notes').value,
                 };
-
                 try {
                     if (id) {
-                        const postRef = doc(db, `artifacts/${appId}/public/data/posts`, String(id)); // Ensure ID is string
-                        await setDoc(postRef, newPostData, { merge: true }); // Use setDoc with merge for update
+                        await setDoc(doc(db, `artifacts/${appId}/public/data/posts`, String(id)), newPostData, { merge: true });
                     } else {
-                        // Firestore automatically generates an ID if you use addDoc
-                        const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), newPostData);
-                        // newPostData.id = docRef.id; // This line is commented out, but onSnapshot will re-fetch anyway.
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), newPostData);
                     }
-                    // No need to call populateFilters or renderAllContent here, onSnapshot will handle it
                     closeModal();
-                } catch (e) {
-                    console.error("Error saving document: ", e);
-                    alert("Error saving post.");
-                }
+                } catch (e) { console.error("Error saving document: ", e); alert("Error saving post."); }
             }
 
             function toggleDarkMode() {
                 document.documentElement.classList.toggle('dark');
-                const isDarkMode = document.documentElement.classList.contains('dark');
-                localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+                localStorage.setItem('darkMode', document.documentElement.classList.contains('dark') ? 'enabled' : 'disabled');
                 renderAllContent();
             }
 
@@ -1033,13 +779,10 @@
 
             async function login() {
                 if (adminPasswordInput.value === ADMIN_PASSWORD) {
-                    // In a real app, this would involve a server generating a custom token
-                    // For this client-side demo, we just set isAdminLoggedIn directly
-                    // and rely on Firebase's anonymous auth for read access.
                     isAdminLoggedIn = true;
                     localStorage.setItem('isAdminLoggedIn', 'true');
                     hideLoginModal();
-                    renderAllContent(); // Re-render to show editable elements
+                    renderAllContent();
                 } else {
                     loginError.classList.remove('hidden');
                 }
@@ -1052,298 +795,85 @@
             }
 
             function updateAdminUI() {
-                if (isAdminLoggedIn) {
-                    addPostBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    addPostBtn.disabled = false;
-                    setCustomTitleBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    setCustomTitleBtn.disabled = false;
-                    clearCustomTitleBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    clearCustomTitleBtn.disabled = false;
-
-                    adminLoginBtn.classList.add('hidden');
-                    adminLogoutBtn.classList.remove('hidden');
-                    loggedInUserDisplay.textContent = 'Logged in as Admin';
-                } else {
-                    addPostBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    addPostBtn.disabled = true;
-                    setCustomTitleBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    setCustomTitleBtn.disabled = true;
-                    clearCustomTitleBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    clearCustomTitleBtn.disabled = true;
-
-                    adminLoginBtn.classList.remove('hidden');
-                    adminLogoutBtn.classList.add('hidden');
-                    loggedInUserDisplay.textContent = 'Not Logged In';
-                }
+                const isAdmin = isAdminLoggedIn;
+                addPostBtn.disabled = !isAdmin;
+                setCustomTitleBtn.disabled = !isAdmin;
+                clearCustomTitleBtn.disabled = !isAdmin;
+                addPostBtn.classList.toggle('opacity-50', !isAdmin);
+                addPostBtn.classList.toggle('cursor-not-allowed', !isAdmin);
+                setCustomTitleBtn.classList.toggle('opacity-50', !isAdmin);
+                setCustomTitleBtn.classList.toggle('cursor-not-allowed', !isAdmin);
+                clearCustomTitleBtn.classList.toggle('opacity-50', !isAdmin);
+                clearCustomTitleBtn.classList.toggle('cursor-not-allowed', !isAdmin);
+                adminLoginBtn.classList.toggle('hidden', isAdmin);
+                adminLogoutBtn.classList.toggle('hidden', !isAdmin);
+                loggedInUserDisplay.textContent = isAdmin ? 'Logged in as Admin' : 'Not Logged In';
             }
 
-            // Data Migration from LocalStorage to Firestore
-            async function migrateLocalStorageToFirestore() {
-                const localStoragePosts = JSON.parse(localStorage.getItem('contentCowboyPosts'));
-                const localStorageCustomTitles = JSON.parse(localStorage.getItem('customWeeklyTitles'));
-                const localStorageWeekStartDay = localStorage.getItem('weekStartDay'); // Get local weekStartDay
-
-                const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
-                const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
-                const globalPreferencesDocRef = doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings'); // New ref
-
-                const firestorePostsSnapshot = await getDocs(postsCollectionRef);
-                const firestoreCustomTitlesDoc = await getDoc(customTitlesDocRef);
-                const firestoreGlobalPreferencesDoc = await getDoc(globalPreferencesDocRef); // New doc fetch
-
-                let migrated = false;
-
-                if (localStoragePosts && localStoragePosts.length > 0 && firestorePostsSnapshot.empty) {
-                    console.log("Migrating posts from localStorage to Firestore...");
-                    for (const post of localStoragePosts) {
-                        // Use setDoc with the post.id as the document ID
-                        await setDoc(doc(postsCollectionRef, String(post.id)), post);
-                    }
-                    localStorage.removeItem('contentCowboyPosts'); // Clear local storage after migration
-                    migrated = true;
-                }
-
-                if (localStorageCustomTitles && Object.keys(localStorageCustomTitles).length > 0 && !firestoreCustomTitlesDoc.exists()) {
-                    console.log("Migrating custom weekly titles from localStorage to Firestore...");
-                    await setDoc(customTitlesDocRef, localStorageCustomTitles);
-                    localStorage.removeItem('customWeeklyTitles'); // Clear local storage after migration
-                    migrated = true;
-                }
-
-                // Migrate weekStartDay from localStorage to Firestore global preferences
-                if (localStorageWeekStartDay && !firestoreGlobalPreferencesDoc.exists()) {
-                    console.log("Migrating weekStartDay from localStorage to Firestore global preferences...");
-                    await setDoc(globalPreferencesDocRef, { weekStartDay: localStorageWeekStartDay }, { merge: true });
-                    localStorage.removeItem('weekStartDay'); // Clear local storage after migration
-                    migrated = true;
-                }
-                // Also, if filters were ever saved locally in the past (though not explicitly in previous versions of the code),
-                // you might consider a one-time migration for them too if needed.
-                // For this version, we assume filters default to 'All' if not in Firestore.
-
-
-                if (migrated) {
-                    alert("Existing data migrated to cloud storage!");
-                }
-            }
-
-            // Function to update global preferences in Firestore
             async function updateGlobalPreferences(newPrefs) {
                 try {
-                    const globalPreferencesDocRef = doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings');
-                    await setDoc(globalPreferencesDocRef, newPrefs, { merge: true });
-                    console.log("Global preferences updated in Firestore:", newPrefs);
-                } catch (e) {
-                    console.error("Error updating global preferences: ", e);
-                    alert("Error saving preferences. Check Firestore rules for globalPreferences.");
-                }
+                    await setDoc(doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings'), newPrefs, { merge: true });
+                } catch (e) { console.error("Error updating global preferences: ", e); }
             }
 
-            // --- Firebase Initialization and Listeners ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     currentUserId = user.uid;
-                    currentUserIdDisplay.textContent = `User ID: ${currentUserId}`;
-                    console.log("Firebase Auth: User is signed in. UID:", currentUserId);
-
-                    // After authentication, perform data migration if necessary
-                    await migrateLocalStorageToFirestore();
-
-                    // Set up real-time listeners for posts
                     onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), (snapshot) => {
-                        posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        console.log("Firestore: Posts data received.", posts);
+                        posts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                         renderAllContent();
-                        populateFilters(); // Re-populate filters whenever posts change
-                    }, (error) => {
-                        console.error("Error listening to posts: ", error);
-                        alert("Error fetching posts data. Please check your Firestore Security Rules.");
-                    });
-
-                    // Set up real-time listener for custom weekly titles
+                        populateFilters();
+                    }, (error) => console.error("Error listening to posts: ", error));
                     onSnapshot(doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles'), (docSnapshot) => {
-                        if (docSnapshot.exists()) {
-                            customWeeklyTitles = docSnapshot.data();
-                            console.log("Firestore: Custom titles data received.", customWeeklyTitles);
-                        } else {
-                            customWeeklyTitles = {};
-                            console.log("Firestore: Custom titles document does not exist.");
-                        }
-                        renderAllContent(); // Re-render to update titles
-                    }, (error) => {
-                        console.error("Error listening to custom titles: ", error);
-                        alert("Error fetching custom titles. Please check your Firestore Security Rules.");
-                    });
-
-                    // Set up real-time listener for global preferences
+                        customWeeklyTitles = docSnapshot.exists() ? docSnapshot.data() : {};
+                        renderAllContent();
+                    }, (error) => console.error("Error listening to custom titles: ", error));
                     onSnapshot(doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings'), (docSnapshot) => {
                         if (docSnapshot.exists()) {
-                            globalPreferences = { ...globalPreferences, ...docSnapshot.data() }; // Merge with defaults
-                            console.log("Firestore: Global preferences received.", globalPreferences);
+                            globalPreferences = { ...globalPreferences, ...docSnapshot.data() };
                         } else {
-                            // If the document doesn't exist, create it with default values
-                            console.log("Firestore: Global preferences document does not exist. Setting defaults.");
-                            updateGlobalPreferences(globalPreferences); // Save defaults to Firestore
+                            updateGlobalPreferences(globalPreferences);
                         }
-                        // Update UI elements immediately after preferences are loaded/updated
                         platformFilter.value = globalPreferences.platformFilter;
                         statusFilter.value = globalPreferences.statusFilter;
                         weekStartDayFilter.value = globalPreferences.weekStartDay;
-                        currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay); // Recalculate week start based on global preference
-                        renderAllContent(); // Re-render to apply new preferences
-                    }, (error) => {
-                        console.error("Error listening to global preferences: ", error);
-                        alert("Error fetching global preferences. Please check your Firestore Security Rules for 'globalPreferences'.");
-                    });
-
-
+                        currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
+                        renderAllContent();
+                    }, (error) => console.error("Error listening to global preferences: ", error));
                 } else {
-                    // User is signed out or not yet signed in. Sign in anonymously.
-                    // Added a small delay to ensure Firebase SDK is fully initialized before attempting sign-in
-                    setTimeout(async () => {
-                        console.log("Firebase Auth: Attempting anonymous sign-in...");
-                        try {
-                            // Check if anonymous authentication is enabled in Firebase project
-                            // This is the most common cause of "auth/configuration-not-found"
-                            await signInAnonymously(auth);
-                            console.log("Firebase Auth: Anonymous sign-in successful.");
-                        } catch (error) {
-                            console.error("Error signing in anonymously: ", error);
-                            if (error.code === 'auth/configuration-not-found') {
-                                alert("Authentication Error: Anonymous sign-in is NOT ENABLED. Please go to your Firebase project console (Authentication -> Sign-in method tab) and enable 'Anonymous' sign-in.");
-                            } else {
-                                alert("Error signing in. Please check your internet connection or Firebase configuration.");
-                            }
-                        }
-                    }, 500); // 500ms delay
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (error) { console.error("Error signing in anonymously: ", error); }
                 }
             });
-            // --- End Firebase Initialization and Listeners ---
 
-
-            // Apply dark mode preference on load (still local)
             if (localStorage.getItem('darkMode') === 'enabled') {
                 document.documentElement.classList.add('dark');
                 darkModeToggle.checked = true;
-            } else {
-                darkModeToggle.checked = false;
             }
 
-            // Event Listeners for filters - now update Firestore
-            platformFilter.addEventListener('change', (e) => {
-                globalPreferences.platformFilter = e.target.value;
-                updateGlobalPreferences({ platformFilter: e.target.value });
-                // renderAllContent will be triggered by onSnapshot
-            });
-            statusFilter.addEventListener('change', (e) => {
-                globalPreferences.statusFilter = e.target.value;
-                updateGlobalPreferences({ statusFilter: e.target.value });
-                // renderAllContent will be triggered by onSnapshot
-            });
+            platformFilter.addEventListener('change', (e) => updateGlobalPreferences({ platformFilter: e.target.value }));
+            statusFilter.addEventListener('change', (e) => updateGlobalPreferences({ statusFilter: e.target.value }));
             darkModeToggle.addEventListener('change', toggleDarkMode);
-
-            weekStartDayFilter.addEventListener('change', (e) => {
-                globalPreferences.weekStartDay = e.target.value;
-                updateGlobalPreferences({ weekStartDay: e.target.value });
-                // currentWeekStartDate will be updated by onSnapshot, then renderAllContent
-            });
-
-            addPostBtn.addEventListener('click', () => {
-                if (isAdminLoggedIn) {
-                    openModal();
-                } else {
-                    showLoginModal();
-                }
-            });
+            weekStartDayFilter.addEventListener('change', (e) => updateGlobalPreferences({ weekStartDay: e.target.value }));
+            addPostBtn.addEventListener('click', () => isAdminLoggedIn ? openModal() : showLoginModal());
             cancelBtn.addEventListener('click', closeModal);
             postForm.addEventListener('submit', handleFormSubmit);
-            modal.addEventListener('click', (e) => {
-                if(e.target === modal) {
-                    closeModal();
-                }
-            });
-            
-            prevWeekBtn.addEventListener('click', () => {
-                currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7);
-                renderAllContent();
-            });
-
-            nextWeekBtn.addEventListener('click', () => {
-                currentWeekStartDate.setDate(currentWeekStartDate.getDate() + 7);
-                renderAllContent();
-            });
-
-            // Custom Title Event Listeners
-            setCustomTitleBtn.addEventListener('click', async () => {
-                if (!isAdminLoggedIn) {
-                    showLoginModal();
-                    return;
-                }
-                const newTitle = customWeeklyTitleInput.value.trim();
-                const weekId = getCurrentWeekId();
-                try {
-                    const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
-                    if (newTitle) {
-                        await setDoc(customTitlesDocRef, { [weekId]: newTitle }, { merge: true });
-                    } else {
-                        // To delete a specific field in a document, you need to use updateDoc and FieldValue.delete()
-                        // However, FieldValue.delete() is not directly available in the global scope.
-                        // A simpler approach for a single document with multiple keys is to fetch, delete key, then set.
-                        const currentTitles = (await getDoc(customTitlesDocRef)).data() || {};
-                        delete currentTitles[weekId];
-                        await setDoc(customTitlesDocRef, currentTitles); // Overwrite with updated object
-                    }
-                    // onSnapshot will handle re-rendering
-                } catch (e) {
-                    console.error("Error setting custom title: ", e);
-                    alert("Error setting custom title.");
-                }
-            });
-
-            clearCustomTitleBtn.addEventListener('click', async () => {
-                if (!isAdminLoggedIn) {
-                    showLoginModal();
-                    return;
-                }
-                const weekId = getCurrentWeekId();
-                try {
-                    const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles');
-                    const currentTitles = (await getDoc(customTitlesDocRef)).data() || {};
-                    if (currentTitles[weekId]) {
-                        delete currentTitles[weekId];
-                        await setDoc(customTitlesDocRef, currentTitles); // Overwrite with updated object
-                    }
-                    // onSnapshot will handle re-rendering
-                } catch (e) {
-                    console.error("Error clearing custom title: ", e);
-                    alert("Error clearing custom title.");
-                }
-            });
-
+            modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+            prevWeekBtn.addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7); renderAllContent(); });
+            nextWeekBtn.addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() + 7); renderAllContent(); });
+            setCustomTitleBtn.addEventListener('click', async () => { if (!isAdminLoggedIn) { showLoginModal(); return; } const weekId = getCurrentWeekId(); try { await setDoc(doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles'), { [weekId]: customWeeklyTitleInput.value.trim() }, { merge: true }); } catch (e) { console.error("Error setting custom title: ", e); } });
+            clearCustomTitleBtn.addEventListener('click', async () => { if (!isAdminLoggedIn) { showLoginModal(); return; } const weekId = getCurrentWeekId(); try { const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles'); const currentTitles = (await getDoc(customTitlesDocRef)).data() || {}; delete currentTitles[weekId]; await setDoc(customTitlesDocRef, currentTitles); } catch (e) { console.error("Error clearing custom title: ", e); } });
             cancelDeleteBtn.addEventListener('click', hideDeleteConfirm);
             confirmDeleteBtn.addEventListener('click', deletePost);
-            deleteConfirmModal.addEventListener('click', (e) => {
-                if(e.target === deleteConfirmModal) {
-                    hideDeleteConfirm();
-                }
-            });
-
+            deleteConfirmModal.addEventListener('click', (e) => { if(e.target === deleteConfirmModal) hideDeleteConfirm(); });
             adminLoginBtn.addEventListener('click', showLoginModal);
             adminLogoutBtn.addEventListener('click', logout);
             cancelLoginBtn.addEventListener('click', hideLoginModal);
             submitLoginBtn.addEventListener('click', login);
-            adminPasswordInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    login();
-                }
-            });
-            loginModal.addEventListener('click', (e) => {
-                if(e.target === loginModal) {
-                    hideLoginModal();
-                }
-            });
+            adminPasswordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') login(); });
+            loginModal.addEventListener('click', (e) => { if(e.target === loginModal) hideLoginModal(); });
 
-            // Initial UI update (data will be loaded by onAuthStateChanged listener)
             updateAdminUI();
         });
     </script>
