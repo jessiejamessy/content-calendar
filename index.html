@@ -58,8 +58,15 @@
         .dark .bg-white { background-color: #1e293b; }
         .dark .bg-slate-100 { background-color: #162135; }
         .dark .bg-slate-200, .dark .bg-slate-300 { background-color: #334155; }
-        .day-column { background-color: #ffffff; }
+        
+        /* MODIFIED: Changed light mode background color for day columns */
+        .day-column { background-color: #f0f9ff; /* sky-50 */ }
         .dark .day-column { background-color: #1e293b; }
+
+        /* MODIFIED: Added a new class for the analytics boxes */
+        .analytics-card { background-color: #f0f9ff; /* sky-50 */ }
+        .dark .analytics-card { background-color: #1e293b; }
+
         .western-font { font-family: 'Slackey', cursive, sans-serif; text-shadow: 2px 2px 3px rgba(0,0,0,0.4); }
         .status-tag { font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; }
         .platform-tag { display: inline-block; font-size: 10px; font-weight: 600; margin-right: 6px; padding: 2px 8px; border-radius: 9999px; }
@@ -118,8 +125,8 @@
         <section id="analytics" class="mb-6">
             <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">Weekly Analytics Overview</h2>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white p-4 rounded-xl shadow-md"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="platformChart"></canvas></div></div>
-                <div class="bg-white p-4 rounded-xl shadow-md"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="statusChart"></canvas></div></div>
+                <div class="analytics-card p-4 rounded-xl shadow-md"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="platformChart"></canvas></div></div>
+                <div class="analytics-card p-4 rounded-xl shadow-md"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="statusChart"></canvas></div></div>
             </div>
         </section>
 
@@ -164,7 +171,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // --- CONSTANTS AND STATE VARIABLES ---
             const ADMIN_PASSWORD = "contentcowboy123";
             const { firebaseDb: db, firebaseAuth: auth, firebaseAppId: appId, firebaseDoc: doc, firebaseDeleteDoc: deleteDoc, firebaseOnSnapshot: onSnapshot, firebaseCollection: collection, firebaseAddDoc: addDoc, firebaseSetDoc: setDoc, firebaseSignInAnonymously: signInAnonymously, firebaseOnAuthStateChanged: onAuthStateChanged } = window;
             
@@ -173,23 +179,8 @@
             let currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
             let platformChart, statusChart, postIdToDelete = null;
 
-            const ui = {
-                platformFilter: document.getElementById('platformFilter'), statusFilter: document.getElementById('statusFilter'), weekStartDayFilter: document.getElementById('weekStartDayFilter'),
-                darkModeToggle: document.getElementById('darkModeToggle'), currentWeekDisplay: document.getElementById('currentWeekDisplay'),
-                currentWeekGrid: document.getElementById('current-week-grid'), postedDailyGrid: document.getElementById('posted-daily-grid'),
-                allPostedContentContainer: document.getElementById('all-posted-content-container'), addPostBtn: document.getElementById('addPostBtn'),
-                loggedInUserDisplay: document.getElementById('loggedInUserDisplay'), currentUserIdDisplay: document.getElementById('currentUserIdDisplay'),
-                adminLoginBtn: document.getElementById('adminLoginBtn'), adminLogoutBtn: document.getElementById('adminLogoutBtn'),
-                postModal: document.getElementById('postModal'), postForm: document.getElementById('postForm'), modalTitle: document.getElementById('modalTitle'),
-                cancelBtn: document.getElementById('cancelBtn'), deleteConfirmModal: document.getElementById('deleteConfirmModal'),
-                confirmDeleteBtn: document.getElementById('confirmDeleteBtn'), cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
-                loginModal: document.getElementById('loginModal'), submitLoginBtn: document.getElementById('submitLoginBtn'),
-                cancelLoginBtn: document.getElementById('cancelLoginBtn'), adminPasswordInput: document.getElementById('adminPassword'),
-                loginError: document.getElementById('loginError'), prevWeekBtn: document.getElementById('prevWeekBtn'),
-                nextWeekBtn: document.getElementById('nextWeekBtn')
-            };
+            const ui = { platformFilter: document.getElementById('platformFilter'), statusFilter: document.getElementById('statusFilter'), weekStartDayFilter: document.getElementById('weekStartDayFilter'), darkModeToggle: document.getElementById('darkModeToggle'), currentWeekDisplay: document.getElementById('currentWeekDisplay'), currentWeekGrid: document.getElementById('current-week-grid'), postedDailyGrid: document.getElementById('posted-daily-grid'), allPostedContentContainer: document.getElementById('all-posted-content-container'), addPostBtn: document.getElementById('addPostBtn'), loggedInUserDisplay: document.getElementById('loggedInUserDisplay'), currentUserIdDisplay: document.getElementById('currentUserIdDisplay'), adminLoginBtn: document.getElementById('adminLoginBtn'), adminLogoutBtn: document.getElementById('adminLogoutBtn'), postModal: document.getElementById('postModal'), postForm: document.getElementById('postForm'), modalTitle: document.getElementById('modalTitle'), cancelBtn: document.getElementById('cancelBtn'), deleteConfirmModal: document.getElementById('deleteConfirmModal'), confirmDeleteBtn: document.getElementById('confirmDeleteBtn'), cancelDeleteBtn: document.getElementById('cancelDeleteBtn'), loginModal: document.getElementById('loginModal'), submitLoginBtn: document.getElementById('submitLoginBtn'), cancelLoginBtn: document.getElementById('cancelLoginBtn'), adminPasswordInput: document.getElementById('adminPassword'), loginError: document.getElementById('loginError'), prevWeekBtn: document.getElementById('prevWeekBtn'), nextWeekBtn: document.getElementById('nextWeekBtn') };
 
-            // --- DATE HELPERS ---
             function getWeekStartDate(d, startDayName) {
                 d = new Date(d); d.setHours(0, 0, 0, 0);
                 const day = d.getDay();
@@ -197,16 +188,15 @@
                 return new Date(new Date(d.setDate(diff)).setHours(0, 0, 0, 0));
             }
 
-            // --- RENDERING ---
             function createPostCard(post) {
                 const card = document.createElement('div');
                 card.className = 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm p-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow relative space-y-2 cursor-pointer';
                 const platformsHtml = post.platforms.map(p => `<span class="platform-tag bg-${p.toLowerCase()}">${p}</span>`).join('');
                 const viewPostButton = (post.outputLink && post.status === 'Posted') ? `<a href="${post.outputLink}" target="_blank" rel="noopener noreferrer" class="text-xs bg-blue-500 text-white px-2 py-1 rounded-full hover:bg-blue-600">View Post</a>` : '';
                 const deleteButtonHtml = isAdminLoggedIn ? `<button class="absolute top-1 right-1 text-slate-400 hover:text-red-500 delete-post-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>` : '';
+
                 card.innerHTML = `<h4 class="font-bold text-sm text-brand-charcoal truncate">${post.topic}</h4><div class="flex flex-wrap gap-1">${platformsHtml}</div><p class="text-xs text-slate-600"><strong>Type:</strong> ${post.type || 'N/A'}</p><div class="flex justify-between items-center"><span class="status-tag bg-${post.status.replace(/\s+/g, '-').toLowerCase()}-200 text-${post.status.replace(/\s+/g, '-').toLowerCase()}-800">${post.status}</span>${viewPostButton}</div>${deleteButtonHtml}`;
                 
-                // FIXED: Direct event listeners for edit and delete, attached on creation.
                 card.addEventListener('click', (e) => {
                     if (e.target.closest('.delete-post-btn') || e.target.closest('a')) return;
                     isAdminLoggedIn ? openModal(post) : showLoginModal();
@@ -219,7 +209,7 @@
                 }
                 return card;
             }
-
+            
             function renderAllContent() {
                 const weekStart = currentWeekStartDate;
                 const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 7));
@@ -252,7 +242,6 @@
 
             function renderCharts(data) { const isDarkMode = document.documentElement.classList.contains('dark'); const colors = { text: isDarkMode ? '#94a3b8' : '#475569', border: isDarkMode ? '#475569' : '#e2e8f0' }; const statusCounts = {'To Do':0, 'In Progress':0, 'For Approval':0, 'Scheduled':0, 'Posted':0}; const platformCounts = {}; data.forEach(post => { if(statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++; post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1); }); if(platformChart) platformChart.destroy(); platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: colors.text } } } } }); if(statusChart) statusChart.destroy(); statusChart = new Chart('statusChart', { type: 'bar', data: { labels: Object.keys(statusCounts), datasets: [{ label: 'Posts', data: Object.values(statusCounts) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: {color: colors.text}, grid:{color:colors.border} }, y: { ticks: {color: colors.text}, grid:{color:colors.border} } } } }); }
 
-            // --- AUTH & DATA ---
             onAuthStateChanged(auth, user => {
                 if (user) {
                     currentUserId = user.uid;
@@ -263,8 +252,7 @@
                     });
                 } else { signInAnonymously(auth).catch(e => console.error("Anonymous sign-in failed", e)); }
             });
-
-            // --- ACTIONS & EVENT HANDLERS ---
+            
             function openModal(post = null) { ui.postForm.reset(); document.getElementById('postId').value = post?.id || ''; ui.modalTitle.textContent = post ? 'Edit Content' : 'Add New Content'; document.getElementById('contentTopic').value = post?.topic || ''; document.getElementById('publishDate').value = post?.publishDate || new Date().toISOString().split('T')[0]; document.getElementById('status').value = post?.status || 'To Do'; document.getElementById('platforms').value = post?.platforms?.join(', ') || ''; document.getElementById('contentType').value = post?.type || ''; document.getElementById('resources').value = post?.resources || ''; document.getElementById('outputLink').value = post?.outputLink || ''; ui.postModal.classList.remove('hidden'); ui.postModal.classList.add('flex'); }
             function closeModal() { ui.postModal.classList.add('hidden'); }
             function showDeleteConfirm(id) { postIdToDelete = id; ui.deleteConfirmModal.classList.remove('hidden'); ui.deleteConfirmModal.classList.add('flex'); }
@@ -277,7 +265,6 @@
             function updateAdminUI() { ui.addPostBtn.disabled = !isAdminLoggedIn; ui.addPostBtn.classList.toggle('opacity-50', !isAdminLoggedIn); ui.adminLoginBtn.classList.toggle('hidden', isAdminLoggedIn); ui.adminLogoutBtn.classList.toggle('hidden', !isAdminLoggedIn); ui.loggedInUserDisplay.textContent = isAdminLoggedIn ? 'Logged in as Admin' : 'Not Logged In'; }
             async function handleFormSubmit(e) { e.preventDefault(); const id = document.getElementById('postId').value; const postData = { topic: document.getElementById('contentTopic').value, publishDate: document.getElementById('publishDate').value, status: document.getElementById('status').value, platforms: document.getElementById('platforms').value.split(',').map(p=>p.trim()).filter(Boolean), type: document.getElementById('contentType').value, resources: document.getElementById('resources').value, outputLink: document.getElementById('outputLink').value }; try { if (id) await setDoc(doc(db, `artifacts/${appId}/public/data/posts`, id), postData, { merge: true }); else await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), postData); closeModal(); } catch (err) { console.error("Error saving post:", err); } }
             
-            // --- INITIALIZATION ---
             (function setupEventListeners() {
                 ui.platformFilter.addEventListener('change', e => { globalPreferences.platformFilter = e.target.value; renderAllContent(); });
                 ui.statusFilter.addEventListener('change', e => { globalPreferences.statusFilter = e.target.value; renderAllContent(); });
