@@ -228,12 +228,9 @@
             }
             
             function populateFilters() {
-                const allPlatforms = new Set();
-                posts.forEach(post => {
-                    if (post.platforms) post.platforms.forEach(p => allPlatforms.add(p));
-                });
+                const allPlatforms = new Set(posts.flatMap(p => p.platforms || []));
                 const currentFilterValue = ui.platformFilter.value;
-                while (ui.platformFilter.options.length > 1) { ui.platformFilter.remove(1); }
+                ui.platformFilter.innerHTML = '<option>All Platforms</option>';
                 Array.from(allPlatforms).sort().forEach(platform => {
                     const option = document.createElement('option');
                     option.value = platform;
@@ -246,13 +243,15 @@
             function renderAllContent() {
                 const weekStart = currentWeekStartDate;
                 const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 7));
-                const postsInDateRange = posts.filter(p => { const d = new Date(p.publishDate); d.setUTCHours(0,0,0,0); return d >= weekStart && d < weekEnd; });
                 
-                // MODIFIED: This data is now specifically for the charts and respects the platform filter
-                const postsForCharts = (globalPreferences.platformFilter === 'All Platforms')
-                    ? postsInDateRange
-                    : postsInDateRange.filter(p => p.platforms.includes(globalPreferences.platformFilter));
-
+                // FIXED: More reliable timezone-safe date parsing
+                const postsInDateRange = posts.filter(p => {
+                    const parts = p.publishDate.split('-');
+                    const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+                    return d >= weekStart && d < weekEnd;
+                });
+                
+                const postsForCharts = (globalPreferences.platformFilter === 'All Platforms') ? postsInDateRange : postsInDateRange.filter(p => p.platforms.includes(globalPreferences.platformFilter));
                 const filteredWeeklyPosts = postsInDateRange.filter(p => (globalPreferences.platformFilter === 'All Platforms' || p.platforms.includes(globalPreferences.platformFilter)) && (globalPreferences.statusFilter === 'All Statuses' || p.status === globalPreferences.statusFilter));
                 const allTimePosted = posts.filter(p => p.status === 'Posted' && (globalPreferences.platformFilter === 'All Platforms' || p.platforms.includes(globalPreferences.platformFilter)));
                 const orderedDays = (globalPreferences.weekStartDay === 'Monday') ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -260,14 +259,18 @@
                 ui.currentWeekDisplay.textContent = `${weekStart.toLocaleDateString()} - ${new Date(new Date(weekStart).setDate(weekStart.getDate() + 6)).toLocaleDateString()}`;
                 ['currentWeekGrid', 'postedDailyGrid', 'allPostedContentContainer'].forEach(id => ui[id].innerHTML = '');
 
+                // FIXED: More robust DOM creation for day columns
                 for (let i = 0; i < 7; i++) {
-                    const dayColHtml = `<div class="day-column rounded-lg p-2 space-y-2"><h3 class="font-bold text-base text-center text-brand-charcoal mb-2">${orderedDays[i]}</h3></div>`;
-                    ui.currentWeekGrid.innerHTML += dayColHtml;
-                    ui.postedDailyGrid.innerHTML += dayColHtml;
+                    const dayCol = document.createElement('div');
+                    dayCol.className = 'day-column rounded-lg p-2 space-y-2';
+                    dayCol.innerHTML = `<h3 class="font-bold text-base text-center text-brand-charcoal mb-2">${orderedDays[i]}</h3>`;
+                    ui.currentWeekGrid.appendChild(dayCol);
+                    ui.postedDailyGrid.appendChild(dayCol.cloneNode(true));
                 }
                 
                 filteredWeeklyPosts.forEach(post => {
-                    const pDate = new Date(post.publishDate); pDate.setUTCHours(0,0,0,0);
+                    const parts = post.publishDate.split('-');
+                    const pDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
                     let dayIndex = pDate.getUTCDay();
                     if (globalPreferences.weekStartDay === 'Monday') dayIndex = (dayIndex === 0) ? 6 : dayIndex - 1;
                     const grid = post.status === 'Posted' ? ui.postedDailyGrid : ui.currentWeekGrid;
@@ -279,29 +282,24 @@
                 updateAdminUI();
             }
 
-            // MODIFIED: This function now handles both stacked and simple bar charts.
             function renderCharts(data) {
                 const isDarkMode = document.documentElement.classList.contains('dark');
                 const chartColors = { text: isDarkMode ? '#94a3b8' : '#475569', border: isDarkMode ? '#475569' : '#e2e8f0' };
                 const selectedPlatform = globalPreferences.platformFilter;
 
-                // Doughnut chart logic
                 const platformCounts = {};
-                data.forEach(post => post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1));
+                (selectedPlatform === 'All Platforms' ? data : data.filter(p => p.platforms.includes(selectedPlatform)))
+                    .forEach(post => post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1));
                 if(platformChart) platformChart.destroy();
                 platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts), backgroundColor: Object.keys(platformCounts).map(p => platformColors[p] || platformColors.default) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartColors.text } } } } });
 
-                // Status chart logic
                 const statuses = ['To Do', 'In Progress', 'For Approval', 'Scheduled', 'Posted'];
                 if(statusChart) statusChart.destroy();
                 
                 if (selectedPlatform === 'All Platforms') {
                     ui.statusChartTitle.textContent = 'Content Status by Platform';
                     const platformsInData = [...new Set(data.flatMap(p => p.platforms))].sort();
-                    const statusDatasets = platformsInData.map(platform => {
-                        const counts = statuses.map(status => data.filter(post => post.status === status && post.platforms.includes(platform)).length);
-                        return { label: platform, data: counts, backgroundColor: platformColors[platform] || platformColors.default };
-                    });
+                    const statusDatasets = platformsInData.map(platform => ({ label: platform, data: statuses.map(status => data.filter(post => post.status === status && post.platforms.includes(platform)).length), backgroundColor: platformColors[platform] || platformColors.default }));
                     statusChart = new Chart('statusChart', { type: 'bar', data: { labels: statuses, datasets: statusDatasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartColors.text } } }, scales: { x: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} }, y: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} } } } });
                 } else {
                     ui.statusChartTitle.textContent = `Content Status for ${selectedPlatform}`;
