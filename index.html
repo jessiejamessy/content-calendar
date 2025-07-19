@@ -53,7 +53,6 @@
         .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
         .dark .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #475569; }
         
-        /* Dark Mode Base */
         .dark { background-color: #0f172a; color: #e2e8f0; }
         .dark .text-slate-800 { color: #e2e8f0; }
         .dark .text-slate-600, .dark .text-slate-500 { color: #94a3b8; }
@@ -61,25 +60,23 @@
         .dark .bg-slate-100 { background-color: #162135; }
         .dark .bg-slate-200, .dark .bg-slate-300 { background-color: #334155; }
         
-        /* MODIFIED: Corrected styles for light mode boxes */
-        .day-column { background-color: #f0f9ff; } /* sky-50 */
-        .analytics-card { background-color: #f0f9ff; } /* sky-50 */
-        #modal-content { background-color: #f8fafc; } /* slate-50 */
-        #postModal label { color: #1f2937; }
-        #postModal input, #postModal select, #postModal textarea {
+        /* MODIFIED: Added a shadow border effect for light mode */
+        .day-column, .analytics-card {
+            box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
             background-color: #ffffff;
-            border: 1px solid #000000;
+        }
+        .dark .day-column, .dark .analytics-card {
+            box-shadow: none;
+            background-color: #1e293b;
         }
 
-        /* Dark Mode Overrides */
-        .dark .day-column { background-color: #1e293b; }
-        .dark .analytics-card { background-color: #1e293b; }
+        #modal-content { background-color: #f8fafc; }
+        #postModal label { color: #1f2937; }
+        #postModal input, #postModal select, #postModal textarea { background-color: #ffffff; border: 1px solid #000000; }
+
         .dark #postModal label { color: #cbd5e1; }
         .dark #modal-content { background-color: #1e293b; }
-        .dark #postModal input, .dark #postModal select, .dark #postModal textarea {
-             background-color: #334155;
-             border: 1px solid #64748b;
-        }
+        .dark #postModal input, .dark #postModal select, .dark #postModal textarea { background-color: #334155; border: 1px solid #64748b; }
 
         .western-font { font-family: 'Slackey', cursive, sans-serif; text-shadow: 2px 2px 3px rgba(0,0,0,0.4); }
         .status-tag { font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; }
@@ -106,15 +103,15 @@
                 <div class="col-span-2 sm:col-span-3 md:col-span-1"><h2 class="font-bold text-lg md:text-xl text-brand-charcoal">Filter Controls</h2></div>
                 <div>
                     <label for="platformFilter" class="block text-xs font-medium text-brand-charcoal">Platform</label>
-                    <select id="platformFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border rounded-md shadow-sm"><option>All Platforms</option></select>
+                    <select id="platformFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm"><option>All Platforms</option></select>
                 </div>
                 <div>
                     <label for="statusFilter" class="block text-xs font-medium text-brand-charcoal">Status</label>
-                    <select id="statusFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border rounded-md shadow-sm"><option>All Statuses</option><option>To Do</option><option>In Progress</option><option>For Approval</option><option>Scheduled</option><option>Posted</option></select>
+                    <select id="statusFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm"><option>All Statuses</option><option>To Do</option><option>In Progress</option><option>For Approval</option><option>Scheduled</option><option>Posted</option></select>
                 </div>
                 <div class="col-span-2 sm:col-span-1">
                     <label for="weekStartDayFilter" class="block text-xs font-medium text-brand-charcoal">Week Starts On</label>
-                    <select id="weekStartDayFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border rounded-md shadow-sm"><option value="Monday">Monday</option><option value="Sunday">Sunday</option></select>
+                    <select id="weekStartDayFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm"><option value="Monday">Monday</option><option value="Sunday">Sunday</option></select>
                 </div>
                 <div class="col-span-2 sm:col-span-2 md:col-span-1 text-right flex flex-row sm:flex-col items-center sm:items-end gap-2">
                     <button id="addPostBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Add Post</button>
@@ -139,8 +136,8 @@
         <section id="analytics" class="mb-6">
             <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">Weekly Analytics Overview</h2>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="analytics-card p-4 rounded-xl shadow-md"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="platformChart"></canvas></div></div>
-                <div class="analytics-card p-4 rounded-xl shadow-md"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="statusChart"></canvas></div></div>
+                <div class="analytics-card p-4 rounded-xl"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="platformChart"></canvas></div></div>
+                <div class="analytics-card p-4 rounded-xl"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="statusChart"></canvas></div></div>
             </div>
         </section>
 
