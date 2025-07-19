@@ -55,7 +55,9 @@
         
         .dark { background-color: #0f172a; color: #e2e8f0; }
         .dark .text-slate-800 { color: #e2e8f0; }
-        .dark .text-slate-600, .dark .text-slate-500 { color: #94a3b8; }
+        .dark .text-slate-600 { color: #94a3b8; }
+        /* MODIFIED: Made the helper text brighter in dark mode */
+        .dark .text-slate-500 { color: #d1d5db; }
         .dark .bg-white { background-color: #1e293b; }
         .dark .bg-slate-100 { background-color: #162135; }
         .dark .bg-slate-200, .dark .bg-slate-300 { background-color: #334155; }
@@ -197,30 +199,7 @@
 
             function getWeekStartDate(d, startDayName) { d = new Date(d); d.setHours(0, 0, 0, 0); const day = d.getDay(); const diff = (startDayName === 'Monday') ? d.getDate() - day + (day === 0 ? -6 : 1) : d.getDate() - day; return new Date(new Date(d.setDate(diff)).setHours(0, 0, 0, 0)); }
             
-            // FIXED: Added defensive checks for missing post data to prevent crashes.
-            function createPostCard(post) {
-                const card = document.createElement('div');
-                card.className = 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm p-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow relative space-y-2 cursor-pointer';
-                const platforms = post.platforms || [];
-                const status = post.status || 'Unknown';
-                const platformsHtml = platforms.map(p => `<span class="platform-tag bg-${p.toLowerCase()}">${p}</span>`).join('');
-                const viewPostButton = (post.outputLink && status === 'Posted') ? `<a href="${post.outputLink}" target="_blank" rel="noopener noreferrer" class="text-xs bg-blue-500 text-white px-2 py-1 rounded-full hover:bg-blue-600">View Post</a>` : '';
-                const deleteButtonHtml = isAdminLoggedIn ? `<button class="absolute top-1 right-1 text-slate-400 hover:text-red-500 delete-post-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>` : '';
-                card.innerHTML = `<h4 class="font-bold text-sm text-brand-charcoal truncate">${post.topic || 'Untitled Post'}</h4><div class="flex flex-wrap gap-1">${platformsHtml}</div><p class="text-xs text-slate-600"><strong>Type:</strong> ${post.type || 'N/A'}</p><div class="flex justify-between items-center"><span class="status-tag bg-${status.replace(/\s+/g, '-').toLowerCase()}-200 text-${status.replace(/\s+/g, '-').toLowerCase()}-800">${status}</span>${viewPostButton}</div>${deleteButtonHtml}`;
-                
-                card.addEventListener('click', (e) => {
-                    if (e.target.closest('.delete-post-btn') || e.target.closest('a')) return;
-                    isAdminLoggedIn ? openModal(post) : showLoginModal();
-                });
-                if (isAdminLoggedIn) {
-                    card.querySelector('.delete-post-btn')?.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        showDeleteConfirm(post.id);
-                    });
-                }
-                return card;
-            }
-            
+            function createPostCard(post) { const card = document.createElement('div'); card.className = 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm p-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow relative space-y-2 cursor-pointer'; const platforms = post.platforms || []; const status = post.status || 'Unknown'; const platformsHtml = platforms.map(p => `<span class="platform-tag bg-${p.toLowerCase()}">${p}</span>`).join(''); const viewPostButton = (post.outputLink && status === 'Posted') ? `<a href="${post.outputLink}" target="_blank" rel="noopener noreferrer" class="text-xs bg-blue-500 text-white px-2 py-1 rounded-full hover:bg-blue-600">View Post</a>` : ''; const deleteButtonHtml = isAdminLoggedIn ? `<button class="absolute top-1 right-1 text-slate-400 hover:text-red-500 delete-post-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>` : ''; card.innerHTML = `<h4 class="font-bold text-sm text-brand-charcoal truncate">${post.topic || 'Untitled Post'}</h4><div class="flex flex-wrap gap-1">${platformsHtml}</div><p class="text-xs text-slate-600"><strong>Type:</strong> ${post.type || 'N/A'}</p><div class="flex justify-between items-center"><span class="status-tag bg-${status.replace(/\s+/g, '-').toLowerCase()}-200 text-${status.replace(/\s+/g, '-').toLowerCase()}-800">${status}</span>${viewPostButton}</div>${deleteButtonHtml}`; card.addEventListener('click', (e) => { if (e.target.closest('.delete-post-btn') || e.target.closest('a')) return; isAdminLoggedIn ? openModal(post) : showLoginModal(); }); if (isAdminLoggedIn) { card.querySelector('.delete-post-btn')?.addEventListener('click', (e) => { e.stopPropagation(); showDeleteConfirm(post.id); }); } return card; }
             function populateFilters() { const allPlatforms = new Set(posts.flatMap(p => p.platforms || [])); const currentFilterValue = ui.platformFilter.value; ui.platformFilter.innerHTML = '<option>All Platforms</option>'; Array.from(allPlatforms).sort().forEach(platform => { const option = document.createElement('option'); option.value = platform; option.textContent = platform; ui.platformFilter.appendChild(option); }); ui.platformFilter.value = currentFilterValue; }
 
             function renderAllContent() {
