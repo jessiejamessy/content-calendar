@@ -9,11 +9,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Slackey&display=swap" rel="stylesheet">
     <script type="module">
-        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -24,170 +23,59 @@
             messagingSenderId: "309580896666",
             appId: "1:309580896666:web:9d987624d2efd644960223"
         };
-
-        // Define global variables for Firebase config and app ID
+        
         const appId = firebaseConfig.projectId;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
         // Make Firebase instances globally accessible
-        window.firebaseApp = app;
         window.firebaseDb = db;
         window.firebaseAuth = auth;
-        window.firebaseInitialAuthToken = initialAuthToken;
         window.firebaseAppId = appId;
         window.firebaseDoc = doc;
         window.firebaseGetDoc = getDoc;
         window.firebaseSetDoc = setDoc;
-        window.firebaseUpdateDoc = updateDoc;
         window.firebaseDeleteDoc = deleteDoc;
         window.firebaseOnSnapshot = onSnapshot;
         window.firebaseCollection = collection;
-        window.firebaseQuery = query;
-        window.firebaseWhere = where;
         window.firebaseAddDoc = addDoc;
         window.firebaseGetDocs = getDocs;
         window.firebaseSignInAnonymously = signInAnonymously;
-        window.firebaseSignInWithCustomToken = signInWithCustomToken;
         window.firebaseOnAuthStateChanged = onAuthStateChanged;
     </script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 450px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .day-column {
-            min-height: 200px; /* MOBILE: Reduced height */
-            min-width: 140px; /* MOBILE: Set a min-width for horizontal scrolling */
-        }
-        .modal-bg {
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        /* MOBILE: Horizontal scroll container */
-        .horizontal-scroll-container {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-            padding-bottom: 8px; /* Space for the scrollbar */
-        }
-        /* MOBILE: Subtle scrollbar styling */
-        .horizontal-scroll-container::-webkit-scrollbar {
-            height: 8px;
-        }
-        .horizontal-scroll-container::-webkit-scrollbar-track {
-            background: #e2e8f0;
-            border-radius: 10px;
-        }
-        .dark .horizontal-scroll-container::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        .horizontal-scroll-container::-webkit-scrollbar-thumb {
-            background: #94a3b8;
-            border-radius: 10px;
-        }
-        .dark .horizontal-scroll-container::-webkit-scrollbar-thumb {
-            background: #475569;
-        }
-
-
-        /* Custom Brand Colors - Light Mode */
-        .text-brand-charcoal { color: #333333; }
-        .bg-brand-charcoal { background-color: #333333; }
-        .text-brand-soft-blue { color: #ADD8E6; }
-        .bg-brand-soft-blue { background-color: #ADD8E6; }
-        .text-brand-coral { color: #FF7F50; }
-        .bg-brand-coral { background-color: #FF7F50; }
-
-        /* Dark Mode Styles */
-        .dark {
-            background-color: #0f172a; /* Darker background */
-            color: #e2e8f0;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; transition: background-color 0.3s ease, color 0.3s ease; }
+        .chart-container { position: relative; width: 100%; max-width: 450px; margin-left: auto; margin-right: auto; }
+        .day-column { min-height: 200px; min-width: 140px; }
+        .modal-bg { background-color: rgba(0,0,0,0.5); }
+        .horizontal-scroll-container { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
+        .horizontal-scroll-container::-webkit-scrollbar { height: 8px; }
+        .horizontal-scroll-container::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
+        .dark .horizontal-scroll-container::-webkit-scrollbar-track { background: #1e293b; }
+        .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+        .dark .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #475569; }
+        .dark { background-color: #0f172a; color: #e2e8f0; }
         .dark .text-slate-800 { color: #e2e8f0; }
-        .dark .text-slate-600 { color: #94a3b8; } /* Lighter gray */
-        .dark .bg-white { background-color: #1e293b; } /* Darker cards */
-        .dark .bg-slate-200 {
-            background-color: #334155;
-            color: #e2e8f0;
-        }
-        .dark .day-column {
-            background-color: #1e293b;
-        }
-        .dark .text-brand-charcoal { color: #e2e8f0; }
-        .dark .bg-brand-charcoal { background-color: #1f2937; }
-        .dark .text-brand-soft-blue { color: #94a3b8; }
-        .dark .bg-brand-soft-blue { background-color: #334155; }
-        .dark .text-brand-coral { color: #fca5a5; }
-        .dark .bg-brand-coral { background-color: #be123c; }
-
-        .dark .bg-rose-200 { background-color: #991b1b; }
-        .dark .text-rose-800 { color: #fecaca; }
-        .dark .bg-amber-200 { background-color: #92400e; }
-        .dark .text-amber-800 { color: #fcd34d; }
-        .dark .bg-sky-200 { background-color: #0c4a6e; }
-        .dark .text-sky-800 { color: #bae6fd; }
-        .dark .bg-emerald-200 { background-color: #065f46; }
-        .dark .text-emerald-800 { color: #a7f3d0; }
-        .bg-violet-200 { background-color: #e0cffc; }
-        .text-violet-800 { color: #5b21b6; }
-        .dark .bg-violet-200 { background-color: #6d28d9; }
-        .dark .text-violet-800 { color: #d8b4fe; }
-
-        .bg-facebook { background-color: #1877F2; }
-        .text-facebook { color: #FFFFFF; }
-        .bg-instagram { background-color: #E4405F; }
-        .text-instagram { color: #FFFFFF; }
-        .bg-tiktok { background-color: #000000; }
-        .text-tiktok { color: #FFFFFF; }
-        .bg-blog { background-color: #FF5722; }
-        .text-blog { color: #FFFFFF; }
-        .bg-linkedin { background-color: #0A66C2; }
-        .text-linkedin { color: #FFFFFF; }
-        .bg-x { background-color: #000000; }
-        .text-x { color: #FFFFFF; }
-        .bg-behance { background-color: #0057FF; }
-        .text-behance { color: #FFFFFF; }
-        .bg-youtube { background-color: #FF0000; }
-        .text-youtube { color: #FFFFFF; }
-
-        .dark .bg-facebook { background-color: #3b5998; }
-        .dark .bg-instagram { background-color: #C13584; }
-        .dark .bg-tiktok { background-color: #222222; }
-        .dark .bg-blog { background-color: #D32F2F; }
-        .dark .bg-linkedin { background-color: #0E76A8; }
-        .dark .bg-x { background-color: #222222; }
-        .dark .bg-behance { background-color: #3C69E7; }
-        .dark .bg-youtube { background-color: #CC0000; }
-
-        #darkModeToggle:checked + div .dot {
-            transform: translateX(20px);
-        }
-        .day-column.light-mode-weekday {
-            background-color: #e0f2fe;
-        }
-        .day-column.light-mode-weekend {
-            background-color: #e0f7fa;
-        }
-        .western-font {
-            font-family: 'Slackey', cursive, sans-serif;
-            text-shadow: 2px 2px 3px rgba(0,0,0,0.4);
-        }
+        .dark .text-slate-600, .dark .text-slate-500 { color: #94a3b8; }
+        .dark .bg-white { background-color: #1e293b; }
+        .dark .bg-slate-100 { background-color: #162135; }
+        .dark .bg-slate-200, .dark .bg-slate-300 { background-color: #334155; }
+        .dark .text-slate-800 { color: #e2e8f0; }
+        .day-column { background-color: #ffffff; }
+        .dark .day-column { background-color: #1e293b; }
+        .western-font { font-family: 'Slackey', cursive, sans-serif; text-shadow: 2px 2px 3px rgba(0,0,0,0.4); }
+        .status-tag { text-xs font-semibold inline-flex items-center px-2 py-1 rounded-full; }
+        .platform-tag { display: inline-block; font-size: 10px; font-weight: 600; margin-right: 6px; padding: 2px 8px; border-radius: 9999px; }
+        .bg-facebook { background-color: #1877F2; color: #fff; } .bg-instagram { background-color: #E4405F; color: #fff; } .bg-tiktok { background-color: #000; color: #fff; } .bg-blog { background-color: #FF5722; color: #fff; } .bg-linkedin { background-color: #0A66C2; color: #fff; } .bg-x { background-color: #000; color: #fff; } .bg-behance { background-color: #0057FF; color: #fff; } .bg-youtube { background-color: #FF0000; color: #fff; }
+        .bg-rose-200 { background-color: #ffe4e6; } .text-rose-800 { color: #9f1239; } .dark .bg-rose-200 { background-color: #9f1239; } .dark .text-rose-800 { color: #fecaca; }
+        .bg-amber-200 { background-color: #fef3c7; } .text-amber-800 { color: #92400e; } .dark .bg-amber-200 { background-color: #92400e; } .dark .text-amber-800 { color: #fcd34d; }
+        .bg-sky-200 { background-color: #e0f2fe; } .text-sky-800 { color: #075985; } .dark .bg-sky-200 { background-color: #0c4a6e; } .dark .text-sky-800 { color: #bae6fd; }
+        .bg-emerald-200 { background-color: #d1fae5; } .text-emerald-800 { color: #065f46; } .dark .bg-emerald-200 { background-color: #065f46; } .dark .text-emerald-800 { color: #a7f3d0; }
+        .bg-violet-200 { background-color: #e9d5ff; } .text-violet-800 { color: #7e22ce; } .dark .bg-violet-200 { background-color: #6d28d9; } .dark .text-violet-800 { color: #d8b4fe; }
     </style>
 </head>
-<body class="antialiased">
+<body class="antialiased text-slate-800">
 
     <div class="container mx-auto p-4 md:p-6">
 
@@ -198,255 +86,145 @@
 
         <div class="bg-white p-4 rounded-xl shadow-md mb-6 sticky top-4 z-10">
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 items-center">
-                <div class="col-span-2 sm:col-span-3 md:col-span-1">
-                    <h2 class="font-bold text-lg md:text-xl text-brand-charcoal">Filter Controls</h2>
-                </div>
+                <div class="col-span-2 sm:col-span-3 md:col-span-1"><h2 class="font-bold text-lg md:text-xl text-brand-charcoal">Filter Controls</h2></div>
                 <div>
                     <label for="platformFilter" class="block text-xs font-medium text-brand-charcoal">Platform</label>
-                    <select id="platformFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-700 dark:text-white dark:border-gray-600">
-                        <option>All Platforms</option>
-                    </select>
+                    <select id="platformFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-700 dark:text-white dark:border-gray-600"><option>All Platforms</option></select>
                 </div>
                 <div>
                     <label for="statusFilter" class="block text-xs font-medium text-brand-charcoal">Status</label>
-                    <select id="statusFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-700 dark:text-white dark:border-gray-600">
-                        <option>All Statuses</option>
-                        <option>To Do</option>
-                        <option>In Progress</option>
-                        <option>For Approval</option>
-                        <option>Scheduled</option>
-                        <option>Posted</option>
-                    </select>
+                    <select id="statusFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-700 dark:text-white dark:border-gray-600"><option>All Statuses</option><option>To Do</option><option>In Progress</option><option>For Approval</option><option>Scheduled</option><option>Posted</option></select>
                 </div>
                 <div class="col-span-2 sm:col-span-1">
                     <label for="weekStartDayFilter" class="block text-xs font-medium text-brand-charcoal">Week Starts On</label>
-                    <select id="weekStartDayFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-700 dark:text-white dark:border-gray-600">
-                        <option value="Monday">Monday</option>
-                        <option value="Sunday">Sunday</option>
-                    </select>
+                    <select id="weekStartDayFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-700 dark:text-white dark:border-gray-600"><option value="Monday">Monday</option><option value="Sunday">Sunday</option></select>
                 </div>
                 <div class="col-span-2 sm:col-span-2 md:col-span-1 text-right flex flex-row sm:flex-col items-center sm:items-end gap-2">
-                    <button id="addPostBtn" class="w-full bg-brand-coral hover:bg-coral-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
-                        Add Post
-                    </button>
+                    <button id="addPostBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Add Post</button>
                     <div id="adminControls" class="w-full flex flex-row gap-2">
-                        <button id="adminLoginBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 text-sm rounded-lg shadow-md">
-                            Login
-                        </button>
-                        <button id="adminLogoutBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 text-sm rounded-lg shadow-md hidden">
-                            Logout
-                        </button>
+                        <button id="adminLoginBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 text-sm rounded-lg shadow-md">Login</button>
+                        <button id="adminLogoutBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 text-sm rounded-lg shadow-md hidden">Logout</button>
                     </div>
                 </div>
-
                 <div class="col-span-2 sm:col-span-3 md:col-span-5 border-t border-slate-200 dark:border-slate-700 pt-4 mt-4 flex flex-wrap justify-between items-center gap-4">
-                    <label for="darkModeToggle" class="flex items-center cursor-pointer">
-                        <div class="relative">
-                            <input type="checkbox" id="darkModeToggle" class="sr-only">
-                            <div class="block bg-slate-600 w-14 h-8 rounded-full"></div>
-                            <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
-                        </div>
-                        <div class="ml-3 text-sm text-brand-charcoal font-medium">Dark Mode</div>
-                    </label>
-                    <div class="text-right">
-                        <span id="loggedInUserDisplay" class="text-xs font-medium text-slate-500 dark:text-slate-400 block">Not Logged In</span>
-                        <span id="currentUserIdDisplay" class="text-xs font-medium text-slate-500 dark:text-slate-400 block"></span>
-                    </div>
+                    <label for="darkModeToggle" class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" id="darkModeToggle" class="sr-only"><div class="block bg-slate-600 w-14 h-8 rounded-full"></div><div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div></div><div class="ml-3 text-sm text-brand-charcoal font-medium">Dark Mode</div></label>
+                    <div class="text-right"><span id="loggedInUserDisplay" class="text-xs font-medium text-slate-500 block">Not Logged In</span><span id="currentUserIdDisplay" class="text-xs font-medium text-slate-500 block"></span></div>
                 </div>
             </div>
         </div>
 
         <section id="week-navigation" class="bg-white p-3 rounded-xl shadow-md mb-6 flex justify-between items-center gap-2">
-            <button id="prevWeekBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-3 rounded-lg transition-transform transform hover:scale-105">
-                <span class="hidden sm:inline">&larr; Previous</span>
-                <span class="sm:hidden">&larr;</span>
-            </button>
+            <button id="prevWeekBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-lg"><span class="hidden sm:inline">&larr; Previous</span><span class="sm:hidden">&larr;</span></button>
             <div class="text-sm md:text-lg font-semibold text-center text-brand-charcoal" id="currentWeekDisplay"></div>
-            <button id="nextWeekBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-3 rounded-lg transition-transform transform hover:scale-105">
-                <span class="hidden sm:inline">Next &rarr;</span>
-                <span class="sm:hidden">&rarr;</span>
-            </button>
+            <button id="nextWeekBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-lg"><span class="hidden sm:inline">Next &rarr;</span><span class="sm:hidden">&rarr;</span></button>
         </section>
-
+        
         <section id="analytics" class="mb-6">
             <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">Weekly Analytics Overview</h2>
-            <p class="text-slate-600 text-center mb-6 text-sm md:text-lg">The charts below reflect the content for the currently selected week.</p>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white p-4 rounded-xl shadow-md">
-                    <h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution by Platform</h3>
-                    <div class="chart-container h-[250px] sm:h-[300px]">
-                        <canvas id="platformChart"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white p-4 rounded-xl shadow-md">
-                    <h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status</h3>
-                    <div class="chart-container h-[250px] sm:h-[300px]">
-                        <canvas id="statusChart"></canvas>
-                    </div>
-                </div>
+                <div class="bg-white p-4 rounded-xl shadow-md"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="platformChart"></canvas></div></div>
+                <div class="bg-white p-4 rounded-xl shadow-md"><h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="statusChart"></canvas></div></div>
             </div>
         </section>
 
         <main id="calendar">
             <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-2 text-center">Current Week Content</h2>
-            <p class="text-slate-600 text-center mb-1 text-xs md:text-base" id="current-week-planned-title"></p>
             <p class="text-slate-500 text-center mb-4 text-xs md:text-sm">(Scroll horizontally to see all days)</p>
-            <div class="horizontal-scroll-container bg-slate-100 dark:bg-slate-800 rounded-lg">
-                <div id="current-week-grid" class="grid grid-cols-7 gap-2 md:gap-4 p-2">
-                    </div>
-            </div>
+            <div class="horizontal-scroll-container bg-slate-100 rounded-lg"><div id="current-week-grid" class="grid grid-cols-7 gap-2 md:gap-4 p-2"></div></div>
         </main>
-
+        
         <section id="posted-daily-calendar" class="mt-8">
             <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-2 text-center">Posted Content by Day</h2>
-            <p class="text-slate-600 text-center mb-1 text-xs md:text-base" id="current-week-posted-title"></p>
             <p class="text-slate-500 text-center mb-4 text-xs md:text-sm">(Scroll horizontally to see all days)</p>
-            <div class="horizontal-scroll-container bg-slate-100 dark:bg-slate-800 rounded-lg">
-                 <div id="posted-daily-grid" class="grid grid-cols-7 gap-2 md:gap-4 p-2">
-                    </div>
-            </div>
+            <div class="horizontal-scroll-container bg-slate-100 rounded-lg"><div id="posted-daily-grid" class="grid grid-cols-7 gap-2 md:gap-4 p-2"></div></div>
         </section>
 
         <section id="all-posted-content-section" class="mt-8">
             <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">All Posted Content (Archive)</h2>
-            <p class="text-slate-600 text-center mb-6 text-sm md:text-lg">A consolidated view of all your published posts.</p>
-            <div id="all-posted-content-container" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                </div>
+            <div id="all-posted-content-container" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"></div>
         </section>
     </div>
 
     <div id="postModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-6 w-full max-w-lg transform transition-all" id="modal-content">
-            <h2 id="modalTitle" class="text-2xl font-bold mb-6 text-brand-charcoal">Add New Content</h2>
-            <form id="postForm">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-6 w-full max-w-lg" id="modal-content">
+            <h2 id="modalTitle" class="text-2xl font-bold mb-6 text-brand-charcoal"></h2>
+            <form id="postForm" class="space-y-4">
                 <input type="hidden" id="postId">
-                <div class="mb-4">
-                    <label for="contentTopic" class="block text-sm font-medium text-brand-charcoal">Content Topic</label>
-                    <input type="text" id="contentTopic" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue" required>
+                <div><label for="contentTopic" class="block text-sm font-medium text-brand-charcoal">Content Topic</label><input type="text" id="contentTopic" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label for="publishDate" class="block text-sm font-medium text-brand-charcoal">Publish Date</label><input type="date" id="publishDate" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
+                    <div><label for="status" class="block text-sm font-medium text-brand-charcoal">Status</label><select id="status" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2"><option>To Do</option><option>In Progress</option><option>For Approval</option><option>Scheduled</option><option>Posted</option></select></div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label for="publishDate" class="block text-sm font-medium text-brand-charcoal">Publish Date</label>
-                        <input type="date" id="publishDate" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue" required>
-                    </div>
-                    <div>
-                        <label for="status" class="block text-sm font-medium text-brand-charcoal">Status</label>
-                        <select id="status" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue">
-                            <option>To Do</option> <option>In Progress</option> <option>For Approval</option> <option>Scheduled</option> <option>Posted</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mb-4">
-                    <label for="platforms" class="block text-sm font-medium text-brand-charcoal">Platforms (comma-separated)</label>
-                    <input type="text" id="platforms" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue" placeholder="e.g., Facebook, Instagram" required>
-                </div>
-                <div class="mb-4">
-                    <label for="contentType" class="block text-sm font-medium text-brand-charcoal">Content Type</label>
-                    <input type="text" id="contentType" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue" placeholder="e.g., Reel, Post" required>
-                </div>
-                <div class="mb-6">
-                    <label for="notes" class="block text-sm font-medium text-brand-charcoal">Notes</label>
-                    <textarea id="notes" rows="3" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue"></textarea>
-                </div>
-                <div class="flex justify-end gap-4">
-                    <button type="button" id="cancelBtn" class="bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 text-slate-800 dark:text-slate-200 font-bold py-2 px-4 rounded-lg">Cancel</button>
-                    <button type="submit" id="saveBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg">Save Post</button>
-                </div>
+                <div><label for="platforms" class="block text-sm font-medium text-brand-charcoal">Platforms (comma-separated)</label><input type="text" id="platforms" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
+                <div><label for="contentType" class="block text-sm font-medium text-brand-charcoal">Content Type</label><input type="text" id="contentType" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
+                <div class="flex justify-end gap-4 pt-4"><button type="button" id="cancelBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="submit" id="saveBtn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Save Post</button></div>
             </form>
         </div>
     </div>
-
-    <div id="deleteConfirmModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-sm transform transition-all" id="delete-modal-content">
-            <h2 class="text-xl font-bold mb-4 text-brand-charcoal">Confirm Deletion</h2>
-            <p class="text-slate-600 dark:text-slate-300 mb-6">Are you sure? This action cannot be undone.</p>
-            <div class="flex justify-end gap-4">
-                <button type="button" id="cancelDeleteBtn" class="bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 text-slate-800 dark:text-slate-200 font-bold py-2 px-4 rounded-lg">Cancel</button>
-                <button type="button" id="confirmDeleteBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Delete</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="loginModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
-         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-sm transform transition-all" id="login-modal-content">
-            <h2 class="text-xl font-bold mb-4 text-brand-charcoal">Admin Login</h2>
-            <div class="mb-4">
-                <label for="adminPassword" class="block text-sm font-medium text-brand-charcoal">Password</label>
-                <input type="password" id="adminPassword" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2">
-                <p id="loginError" class="text-red-500 text-sm mt-2 hidden">Incorrect password.</p>
-            </div>
-            <div class="flex justify-end gap-4">
-                <button type="button" id="cancelLoginBtn" class="bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 text-slate-800 dark:text-slate-200 font-bold py-2 px-4 rounded-lg">Cancel</button>
-                <button type="button" id="submitLoginBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg">Login</button>
-            </div>
-        </div>
-    </div>
-
+    <div id="deleteConfirmModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-800 rounded-lg p-8 w-full max-w-sm"><h2 class="text-xl font-bold mb-4 text-brand-charcoal">Confirm Deletion</h2><p class="text-slate-600 mb-6">This action cannot be undone.</p><div class="flex justify-end gap-4"><button type="button" id="cancelDeleteBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="button" id="confirmDeleteBtn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg">Delete</button></div></div></div>
+    <div id="loginModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-800 rounded-lg p-8 w-full max-w-sm"><h2 class="text-xl font-bold mb-4 text-brand-charcoal">Admin Login</h2><div class="mb-4"><label for="adminPassword" class="block text-sm font-medium text-brand-charcoal">Password</label><input type="password" id="adminPassword" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2"><p id="loginError" class="text-red-500 text-sm mt-2 hidden">Incorrect password.</p></div><div class="flex justify-end gap-4"><button type="button" id="cancelLoginBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="button" id="submitLoginBtn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Login</button></div></div></div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- START: CORRECTED AND STABLE SCRIPT ---
             const ADMIN_PASSWORD = "contentcowboy123";
-            const { initializeApp } = window; // Simplified for brevity
+
+            // Correctly get Firebase functions from window object
             const db = window.firebaseDb;
             const auth = window.firebaseAuth;
             const appId = window.firebaseAppId;
-            const { doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs } = window;
-            const { signInAnonymously, onAuthStateChanged } = window;
+            const doc = window.firebaseDoc;
+            const getDoc = window.firebaseGetDoc;
+            const setDoc = window.firebaseSetDoc;
+            const deleteDoc = window.firebaseDeleteDoc;
+            const onSnapshot = window.firebaseOnSnapshot;
+            const collection = window.firebaseCollection;
+            const addDoc = window.firebaseAddDoc;
+            const getDocs = window.firebaseGetDocs;
+            const signInAnonymously = window.firebaseSignInAnonymously;
+            const onAuthStateChanged = window.firebaseOnAuthStateChanged;
 
+            // State variables
             let posts = [];
-            let customWeeklyTitles = {};
             let currentUserId = null;
             let isAdminLoggedIn = false;
-
-            let globalPreferences = {
-                platformFilter: 'All Platforms',
-                statusFilter: 'All Statuses',
-                weekStartDay: 'Monday'
-            };
-
-            const platformFilter = document.getElementById('platformFilter');
-            const statusFilter = document.getElementById('statusFilter');
-            const weekStartDayFilter = document.getElementById('weekStartDayFilter');
-            const darkModeToggle = document.getElementById('darkModeToggle');
-            const currentWeekDisplay = document.getElementById('currentWeekDisplay');
-            const currentWeekPlannedTitle = document.getElementById('current-week-planned-title');
-            const currentWeekPostedTitle = document.getElementById('current-week-posted-title');
-            const prevWeekBtn = document.getElementById('prevWeekBtn');
-            const nextWeekBtn = document.getElementById('nextWeekBtn');
-            const modal = document.getElementById('postModal');
-            const modalContent = document.getElementById('modal-content');
-            const addPostBtn = document.getElementById('addPostBtn');
-            const cancelBtn = document.getElementById('cancelBtn');
-            const postForm = document.getElementById('postForm');
-            const modalTitle = document.getElementById('modalTitle');
-            const postIdInput = document.getElementById('postId');
-            const deleteConfirmModal = document.getElementById('deleteConfirmModal');
-            const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-            let postIdToDelete = null;
-            const loginModal = document.getElementById('loginModal');
-            const adminLoginBtn = document.getElementById('adminLoginBtn');
-            const adminLogoutBtn = document.getElementById('adminLogoutBtn');
-            const cancelLoginBtn = document.getElementById('cancelLoginBtn');
-            const submitLoginBtn = document.getElementById('submitLoginBtn');
-            const adminPasswordInput = document.getElementById('adminPassword');
-            const loginError = document.getElementById('loginError');
-            const loggedInUserDisplay = document.getElementById('loggedInUserDisplay');
-            const currentUserIdDisplay = document.getElementById('currentUserIdDisplay');
-
+            let globalPreferences = { platformFilter: 'All Platforms', statusFilter: 'All Statuses', weekStartDay: 'Monday' };
+            let currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
             let platformChart, statusChart;
 
-            const statusColors = { 'To Do': 'bg-rose-200', 'In Progress': 'bg-amber-200', 'Scheduled': 'bg-sky-200', 'Posted': 'bg-emerald-200', 'For Approval': 'bg-violet-200' };
-            const statusTextColors = { 'To Do': 'text-rose-800', 'In Progress': 'text-amber-800', 'Scheduled': 'text-sky-800', 'Posted': 'text-emerald-800', 'For Approval': 'text-violet-800' };
-            const platformTagColors = { 'Facebook':{bg:'bg-facebook',text:'text-facebook'},'Instagram':{bg:'bg-instagram',text:'text-instagram'},'TikTok':{bg:'bg-tiktok',text:'text-tiktok'},'Blog':{bg:'bg-blog',text:'text-blog'},'LinkedIn':{bg:'bg-linkedin',text:'text-linkedin'},'X':{bg:'bg-x',text:'text-x'},'Behance':{bg:'bg-behance',text:'text-behance'},'YouTube':{bg:'bg-youtube',text:'text-youtube'},'default':{bg:'bg-slate-200',text:'text-slate-700'}};
+            // UI Elements
+            const ui = {
+                platformFilter: document.getElementById('platformFilter'),
+                statusFilter: document.getElementById('statusFilter'),
+                weekStartDayFilter: document.getElementById('weekStartDayFilter'),
+                darkModeToggle: document.getElementById('darkModeToggle'),
+                currentWeekDisplay: document.getElementById('currentWeekDisplay'),
+                currentWeekGrid: document.getElementById('current-week-grid'),
+                postedDailyGrid: document.getElementById('posted-daily-grid'),
+                allPostedContentContainer: document.getElementById('all-posted-content-container'),
+                addPostBtn: document.getElementById('addPostBtn'),
+                loggedInUserDisplay: document.getElementById('loggedInUserDisplay'),
+                currentUserIdDisplay: document.getElementById('currentUserIdDisplay'),
+                adminLoginBtn: document.getElementById('adminLoginBtn'),
+                adminLogoutBtn: document.getElementById('adminLogoutBtn'),
+                postModal: document.getElementById('postModal'),
+                postForm: document.getElementById('postForm'),
+                modalTitle: document.getElementById('modalTitle'),
+                cancelBtn: document.getElementById('cancelBtn'),
+                deleteConfirmModal: document.getElementById('deleteConfirmModal'),
+                confirmDeleteBtn: document.getElementById('confirmDeleteBtn'),
+                cancelDeleteBtn: document.getElementById('cancelDeleteBtn'),
+                loginModal: document.getElementById('loginModal'),
+                submitLoginBtn: document.getElementById('submitLoginBtn'),
+                cancelLoginBtn: document.getElementById('cancelLoginBtn'),
+                adminPasswordInput: document.getElementById('adminPassword'),
+                loginError: document.getElementById('loginError'),
+                prevWeekBtn: document.getElementById('prevWeekBtn'),
+                nextWeekBtn: document.getElementById('nextWeekBtn'),
+            };
+            let postIdToDelete = null;
 
-            function getChartColors(isDarkMode) {
-                if (isDarkMode) return { platforms: ['#94a3b8', '#fca5a5', '#e2e8f0', '#a78bfa', '#fbcfe8', '#f87171', '#c4b5fd', '#60a5fa'], statuses: { 'To Do': '#fca5a5', 'In Progress': '#94a3b8', 'Scheduled': '#e2e8f0', 'Posted': '#a7f3d0', 'For Approval': '#d8b4fe' } };
-                return { platforms: ['#ADD8E6', '#FF7F50', '#333333', '#6366f1', '#ec4899', '#ef4444', '#8b5cf6', '#3b82f6'], statuses: { 'To Do': '#FF7F50', 'In Progress': '#ADD8E6', 'Scheduled': '#333333', 'Posted': '#10b981', 'For Approval': '#5b21b6' } };
-            }
-
-            let currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
-
+            // --- Core Functions ---
             function getWeekStartDate(d, startDayName) {
                 d = new Date(d); d.setHours(0, 0, 0, 0);
                 const day = d.getDay();
@@ -454,173 +232,158 @@
                 return new Date(new Date(d.setDate(diff)).setHours(0, 0, 0, 0));
             }
 
-            function getWeekRangeText(date) {
-                const start = getWeekStartDate(new Date(date), globalPreferences.weekStartDay);
-                const end = new Date(start); end.setDate(start.getDate() + 6);
-                const options = { month: 'short', day: 'numeric' };
-                const yearOption = { year: 'numeric' };
-                return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}, ${end.toLocaleDateString('en-US', yearOption)}`;
-            }
-
             function createPostCard(post) {
                 const card = document.createElement('div');
                 card.className = 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm p-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow relative';
                 card.dataset.id = post.id;
-                const platformsHtml = post.platforms.map(p => { const c=platformTagColors[p]||platformTagColors.default; return `<span class="inline-block ${c.bg} ${c.text} text-[10px] font-semibold mr-1.5 px-2 py-0.5 rounded-full">${p}</span>`; }).join('');
-                card.innerHTML = `<h4 class="font-bold text-sm text-brand-charcoal mb-2 truncate">${post.topic}</h4><div class="mb-2 flex flex-wrap gap-1">${platformsHtml}</div><p class="text-xs text-slate-600 mb-2"><strong>Type:</strong> ${post.type}</p><div class="text-xs font-semibold inline-flex items-center px-2 py-1 rounded-full ${statusColors[post.status]} ${statusTextColors[post.status]}">${post.status}</div>${isAdminLoggedIn?`<button class="absolute top-1 right-1 text-slate-400 hover:text-red-500 delete-post-btn" data-id="${post.id}"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>`:''}`;
-                card.addEventListener('click', e => { if (!e.target.closest('.delete-post-btn')) { if (isAdminLoggedIn) openModal(post); else showLoginModal(); } });
-                if (isAdminLoggedIn) card.querySelector('.delete-post-btn').addEventListener('click', e => { e.stopPropagation(); showDeleteConfirm(post.id); });
+                const platformsHtml = post.platforms.map(p => `<span class="platform-tag bg-${p.toLowerCase()}">${p}</span>`).join('');
+                card.innerHTML = `<h4 class="font-bold text-sm text-brand-charcoal mb-2 truncate">${post.topic}</h4><div class="mb-2 flex flex-wrap gap-1">${platformsHtml}</div><p class="text-xs text-slate-600 mb-2"><strong>Type:</strong> ${post.type}</p><div class="status-tag bg-${post.status.replace(/\s+/g, '-').toLowerCase()}-200 text-${post.status.replace(/\s+/g, '-').toLowerCase()}-800">${post.status}</div>${isAdminLoggedIn?`<button class="absolute top-1 right-1 text-slate-400 hover:text-red-500 delete-post-btn" data-id="${post.id}"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>`:''}`;
+                card.addEventListener('click', e => { if (!e.target.closest('.delete-post-btn')) isAdminLoggedIn ? openModal(post) : showLoginModal(); });
+                if (isAdminLoggedIn) card.querySelector('.delete-post-btn')?.addEventListener('click', e => { e.stopPropagation(); showDeleteConfirm(post.id); });
                 return card;
             }
 
-            function getFilteredPosts() {
-                const selectedPlatform = globalPreferences.platformFilter, selectedStatus = globalPreferences.statusFilter;
-                const weekStart = new Date(currentWeekStartDate); weekStart.setHours(0, 0, 0, 0);
-                const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 7);
-                const allPostsFilteredByPlatform = posts.filter(p => selectedPlatform === 'All Platforms' || (p.platforms && p.platforms.includes(selectedPlatform)));
-                let currentWeekNonPosted = allPostsFilteredByPlatform.filter(p => p.status !== 'Posted' && new Date(p.publishDate).setHours(0,0,0,0) >= weekStart.getTime() && new Date(p.publishDate).setHours(0,0,0,0) < weekEnd.getTime());
-                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') currentWeekNonPosted = currentWeekNonPosted.filter(p => p.status === selectedStatus);
-                let currentWeekPostedByDay = allPostsFilteredByPlatform.filter(p => p.status === 'Posted' && new Date(p.publishDate).setHours(0,0,0,0) >= weekStart.getTime() && new Date(p.publishDate).setHours(0,0,0,0) < weekEnd.getTime());
-                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') currentWeekPostedByDay = [];
-                let allTimePosted = posts.filter(p => p.status === 'Posted');
-                if (selectedPlatform !== 'All Platforms') allTimePosted = allTimePosted.filter(p => (p.platforms && p.platforms.includes(selectedPlatform)));
-                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') allTimePosted = [];
-                return { currentWeekNonPosted, currentWeekPostedByDay, allTimePosted };
-            }
-
             function renderAllContent() {
-                const orderedDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']; // Simplified for this layout
-                currentWeekDisplay.textContent = getWeekRangeText(currentWeekStartDate);
-                currentUserIdDisplay.textContent = currentUserId ? `UID: ${currentUserId.slice(0,6)}...` : '';
-                platformFilter.value = globalPreferences.platformFilter; statusFilter.value = globalPreferences.statusFilter; weekStartDayFilter.value = globalPreferences.weekStartDay;
-
-                const currentWeekGrid = document.getElementById('current-week-grid'); currentWeekGrid.innerHTML = '';
-                const postedDailyGrid = document.getElementById('posted-daily-grid'); postedDailyGrid.innerHTML = '';
-                const allPostedContentContainer = document.getElementById('all-posted-content-container'); allPostedContentContainer.innerHTML = '';
-
-                const dayColumns = {};
-                const postedDayColumns = {};
-
+                const orderedDays = (globalPreferences.weekStartDay === 'Monday') ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                
+                ui.currentWeekDisplay.textContent = `${getWeekStartDate(currentWeekStartDate).toLocaleDateString()} - ${new Date(new Date(currentWeekStartDate).setDate(currentWeekStartDate.getDate() + 6)).toLocaleDateString()}`;
+                
+                ['currentWeekGrid', 'postedDailyGrid', 'allPostedContentContainer'].forEach(id => ui[id].innerHTML = '');
+                
                 for (let i = 0; i < 7; i++) {
-                    const dayName = orderedDays[i];
-                    const isWeekend = dayName === 'Saturday' || dayName === 'Sunday';
-                    const dayCol = document.createElement('div');
-                    dayCol.className = `day-column rounded-lg p-2 space-y-2 ${isWeekend ? 'light-mode-weekend' : 'light-mode-weekday'}`;
-                    dayCol.innerHTML = `<h3 class="font-bold text-base text-center text-brand-charcoal mb-2">${dayName.slice(0,3)}</h3>`;
-                    dayColumns[i] = dayCol;
-                    currentWeekGrid.appendChild(dayCol);
-
-                    const postedDayCol = document.createElement('div');
-                    postedDayCol.className = `day-column rounded-lg p-2 space-y-2 ${isWeekend ? 'light-mode-weekend' : 'light-mode-weekday'}`;
-                    postedDayCol.innerHTML = `<h3 class="font-bold text-base text-center text-brand-charcoal mb-2">${dayName.slice(0,3)}</h3>`;
-                    postedDayColumns[i] = postedDayCol;
-                    postedDailyGrid.appendChild(postedDayCol);
+                    ['currentWeekGrid', 'postedDailyGrid'].forEach(gridId => {
+                        const dayCol = document.createElement('div');
+                        dayCol.className = 'day-column rounded-lg p-2 space-y-2';
+                        dayCol.innerHTML = `<h3 class="font-bold text-base text-center text-brand-charcoal mb-2">${orderedDays[i]}</h3>`;
+                        ui[gridId].appendChild(dayCol);
+                    });
                 }
-
-                const { currentWeekNonPosted, currentWeekPostedByDay, allTimePosted } = getFilteredPosts();
                 
-                const getDayIndex = (dateStr) => { const day = new Date(dateStr).getUTCDay(); return day === 0 ? 6 : day - 1; };
-
-                currentWeekNonPosted.forEach(post => {
-                    const dayIndex = getDayIndex(post.publishDate);
-                    if (dayColumns[dayIndex]) dayColumns[dayIndex].appendChild(createPostCard(post));
-                });
-                currentWeekPostedByDay.forEach(post => {
-                    const dayIndex = getDayIndex(post.publishDate);
-                    if (postedDayColumns[dayIndex]) postedDayColumns[dayIndex].appendChild(createPostCard(post));
-                });
-                allTimePosted.forEach(post => allPostedContentContainer.appendChild(createPostCard(post)));
+                const weekStart = currentWeekStartDate;
+                const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 7));
                 
-                renderCharts([...currentWeekNonPosted, ...currentWeekPostedByDay]);
+                const filteredPosts = posts.filter(p => globalPreferences.platformFilter === 'All Platforms' || (p.platforms && p.platforms.includes(globalPreferences.platformFilter)))
+                                           .filter(p => globalPreferences.statusFilter === 'All Statuses' || p.status === globalPreferences.statusFilter);
+                
+                const weeklyPosts = filteredPosts.filter(p => {
+                    const pDate = new Date(new Date(p.publishDate).setUTCHours(0,0,0,0));
+                    return pDate >= weekStart && pDate < weekEnd;
+                });
+
+                const allTimePosted = posts.filter(p => p.status === 'Posted');
+                
+                weeklyPosts.forEach(post => {
+                    const pDate = new Date(new Date(post.publishDate).setUTCHours(0,0,0,0));
+                    let dayIndex = pDate.getUTCDay();
+                    if (globalPreferences.weekStartDay === 'Monday') dayIndex = (dayIndex === 0) ? 6 : dayIndex - 1;
+
+                    const grid = post.status === 'Posted' ? ui.postedDailyGrid : ui.currentWeekGrid;
+                    grid.children[dayIndex]?.appendChild(createPostCard(post));
+                });
+                
+                allTimePosted.forEach(post => ui.allPostedContentContainer.appendChild(createPostCard(post)));
+
+                renderCharts(weeklyPosts);
                 updateAdminUI();
             }
 
             function renderCharts(data) {
                 const isDarkMode = document.documentElement.classList.contains('dark');
-                const colors = getChartColors(isDarkMode);
+                const getColors = () => isDarkMode ? {bg:'transparent', text:'#94a3b8', border:'#475569'} : {bg:'transparent', text:'#475569', border:'#e2e8f0'};
+                
+                const statusCounts = {'To Do':0, 'In Progress':0, 'For Approval':0, 'Scheduled':0, 'Posted':0};
                 const platformCounts = {};
-                data.forEach(post => { if (post.platforms) post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1); });
-                const statusCounts = { 'To Do': 0, 'In Progress': 0, 'For Approval': 0, 'Scheduled': 0, 'Posted': 0 };
-                data.forEach(post => { if (statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++; });
-                const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: isDarkMode ? '#e2e8f0' : '#333', font: {size: 10} } } } };
+                data.forEach(post => {
+                    statusCounts[post.status]++;
+                    post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1);
+                });
+
                 if(platformChart) platformChart.destroy();
-                platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts), backgroundColor: colors.platforms, borderColor: isDarkMode ? '#1e293b' : '#fff', borderWidth: 2 }] }, options: chartOptions });
+                platformChart = new Chart('platformChart', {
+                    type: 'doughnut',
+                    data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts) }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: getColors().text } } } }
+                });
+
                 if(statusChart) statusChart.destroy();
-                const barChartOptions = {...chartOptions, plugins: {legend: {display:false}}, scales:{y:{ticks:{color:isDarkMode?'#94a3b8':'#64748b'}},x:{ticks:{color:isDarkMode?'#94a3b8':'#64748b'}}}};
-                statusChart = new Chart('statusChart', { type: 'bar', data: { labels: Object.keys(statusCounts), datasets: [{ label: 'Posts', data: Object.values(statusCounts), backgroundColor: Object.values(colors.statuses) }] }, options: barChartOptions });
+                statusChart = new Chart('statusChart', {
+                    type: 'bar',
+                    data: { labels: Object.keys(statusCounts), datasets: [{ label: 'Posts', data: Object.values(statusCounts) }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: {color: getColors().text}, grid:{color:getColors().border} }, y: { ticks: {color: getColors().text}, grid:{color:getColors().border} } } }
+                });
             }
 
+            // --- Auth & Data Loading ---
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    currentUserId = user.uid;
+                    ui.currentUserIdDisplay.textContent = `UID: ${user.uid.slice(0, 6)}...`;
+                    onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), snap => {
+                        posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        renderAllContent();
+                    });
+                } else {
+                    signInAnonymously(auth).catch(e => console.error("Anonymous sign-in failed", e));
+                }
+            });
+
+            // --- Event Listeners ---
+            function setupEventListeners() {
+                ui.platformFilter.addEventListener('change', e => { globalPreferences.platformFilter = e.target.value; renderAllContent(); });
+                ui.statusFilter.addEventListener('change', e => { globalPreferences.statusFilter = e.target.value; renderAllContent(); });
+                ui.weekStartDayFilter.addEventListener('change', e => { globalPreferences.weekStartDay = e.target.value; currentWeekStartDate = getWeekStartDate(currentWeekStartDate, e.target.value); renderAllContent(); });
+                ui.darkModeToggle.addEventListener('change', () => { const isDark = document.documentElement.classList.toggle('dark'); localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled'); renderAllContent(); });
+                ui.addPostBtn.addEventListener('click', () => isAdminLoggedIn ? openModal() : showLoginModal());
+                ui.cancelBtn.addEventListener('click', closeModal);
+                ui.postForm.addEventListener('submit', handleFormSubmit);
+                ui.prevWeekBtn.addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7); renderAllContent(); });
+                ui.nextWeekBtn.addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() + 7); renderAllContent(); });
+                ui.adminLoginBtn.addEventListener('click', showLoginModal);
+                ui.adminLogoutBtn.addEventListener('click', logout);
+                ui.submitLoginBtn.addEventListener('click', login);
+                ui.cancelLoginBtn.addEventListener('click', hideLoginModal);
+                ui.confirmDeleteBtn.addEventListener('click', deletePost);
+                ui.cancelDeleteBtn.addEventListener('click', () => ui.deleteConfirmModal.classList.add('hidden'));
+                [ui.postModal, ui.deleteConfirmModal, ui.loginModal].forEach(modal => modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); }));
+            }
+            
+            // --- Helper Functions ---
             function openModal(post = null) {
-                postForm.reset();
-                document.getElementById('postId').value = post ? post.id : '';
-                document.getElementById('contentTopic').value = post ? post.topic : '';
-                document.getElementById('publishDate').value = post ? post.publishDate : new Date().toISOString().split('T')[0];
-                document.getElementById('status').value = post ? post.status : 'To Do';
-                document.getElementById('platforms').value = post ? post.platforms.join(', ') : '';
-                document.getElementById('contentType').value = post ? post.type : '';
-                document.getElementById('notes').value = post ? post.notes : '';
-                modalTitle.textContent = post ? 'Edit Content' : 'Add New Content';
-                modal.classList.remove('hidden'); modal.classList.add('flex');
+                ui.postForm.reset();
+                document.getElementById('postId').value = post?.id || '';
+                ui.modalTitle.textContent = post ? 'Edit Content' : 'Add New Content';
+                document.getElementById('contentTopic').value = post?.topic || '';
+                document.getElementById('publishDate').value = post?.publishDate || new Date().toISOString().split('T')[0];
+                document.getElementById('status').value = post?.status || 'To Do';
+                document.getElementById('platforms').value = post?.platforms?.join(', ') || '';
+                document.getElementById('contentType').value = post?.type || '';
+                ui.postModal.classList.remove('hidden'); ui.postModal.classList.add('flex');
             }
-
-            function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
-
+            function closeModal() { ui.postModal.classList.add('hidden'); ui.postModal.classList.remove('flex'); }
+            function showDeleteConfirm(id) { postIdToDelete = id; ui.deleteConfirmModal.classList.remove('hidden'); ui.deleteConfirmModal.classList.add('flex'); }
+            async function deletePost() { if(!postIdToDelete) return; await deleteDoc(doc(db,`artifacts/${appId}/public/data/posts`, postIdToDelete)); ui.deleteConfirmModal.classList.add('hidden'); }
+            function showLoginModal() { ui.adminPasswordInput.value = ''; ui.loginError.classList.add('hidden'); ui.loginModal.classList.remove('hidden'); ui.loginModal.classList.add('flex'); }
+            function hideLoginModal() { ui.loginModal.classList.add('hidden'); ui.loginModal.classList.remove('flex'); }
+            function login() { if (ui.adminPasswordInput.value === ADMIN_PASSWORD) { isAdminLoggedIn = true; localStorage.setItem('isAdminLoggedIn', 'true'); hideLoginModal(); renderAllContent(); } else { ui.loginError.classList.remove('hidden'); } }
+            function logout() { isAdminLoggedIn = false; localStorage.removeItem('isAdminLoggedIn'); renderAllContent(); }
+            function updateAdminUI() { ui.addPostBtn.disabled = !isAdminLoggedIn; ui.addPostBtn.classList.toggle('opacity-50', !isAdminLoggedIn); ui.adminLoginBtn.classList.toggle('hidden', isAdminLoggedIn); ui.adminLogoutBtn.classList.toggle('hidden', !isAdminLoggedIn); ui.loggedInUserDisplay.textContent = isAdminLoggedIn ? 'Logged in as Admin' : 'Not Logged In'; }
             async function handleFormSubmit(e) {
                 e.preventDefault();
                 const id = document.getElementById('postId').value;
-                const postData = {
-                    topic: document.getElementById('contentTopic').value, publishDate: document.getElementById('publishDate').value,
-                    status: document.getElementById('status').value, platforms: document.getElementById('platforms').value.split(',').map(p=>p.trim()).filter(Boolean),
-                    type: document.getElementById('contentType').value, notes: document.getElementById('notes').value
-                };
+                const postData = { topic: document.getElementById('contentTopic').value, publishDate: document.getElementById('publishDate').value, status: document.getElementById('status').value, platforms: document.getElementById('platforms').value.split(',').map(p=>p.trim()).filter(Boolean), type: document.getElementById('contentType').value };
                 try {
                     if (id) await setDoc(doc(db, `artifacts/${appId}/public/data/posts`, id), postData, { merge: true });
                     else await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), postData);
                     closeModal();
                 } catch (err) { console.error("Error saving post:", err); }
             }
-            
-            function toggleDarkMode() {
-                const isDark = document.documentElement.classList.toggle('dark');
-                localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
-                renderAllContent();
-            }
 
-            function showLoginModal() { loginModal.classList.remove('hidden'); loginModal.classList.add('flex'); }
-            function hideLoginModal() { loginModal.classList.add('hidden'); loginModal.classList.remove('flex'); }
-
-            function login() {
-                if (adminPasswordInput.value === ADMIN_PASSWORD) {
-                    isAdminLoggedIn = true; localStorage.setItem('isAdminLoggedIn', 'true');
-                    hideLoginModal(); renderAllContent();
-                } else { loginError.classList.remove('hidden'); }
-            }
-
-            function logout() { isAdminLoggedIn = false; localStorage.setItem('isAdminLoggedIn', 'false'); renderAllContent(); }
-            function updateAdminUI() { addPostBtn.disabled = !isAdminLoggedIn; addPostBtn.classList.toggle('opacity-50', !isAdminLoggedIn); addPostBtn.classList.toggle('cursor-not-allowed', !isAdminLoggedIn); adminLoginBtn.classList.toggle('hidden', isAdminLoggedIn); adminLogoutBtn.classList.toggle('hidden', !isAdminLoggedIn); loggedInUserDisplay.textContent = isAdminLoggedIn ? 'Logged in as Admin' : 'Not Logged In'; }
-            
-            onAuthStateChanged(auth, async (user) => {
-                if (user) { currentUserId = user.uid; onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), snap => { posts = snap.docs.map(d => ({id:d.id, ...d.data()})); renderAllContent(); });
-                } else { try { await signInAnonymously(auth); } catch (e) { console.error(e); } }
-            });
-
-            if (localStorage.getItem('darkMode') === 'enabled') { document.documentElement.classList.add('dark'); darkModeToggle.checked = true; }
+            // --- Initialization ---
+            if (localStorage.getItem('darkMode') === 'enabled') { document.documentElement.classList.add('dark'); ui.darkModeToggle.checked = true; }
             if (localStorage.getItem('isAdminLoggedIn') === 'true') { isAdminLoggedIn = true; }
-            
-            platformFilter.addEventListener('change', () => {globalPreferences.platformFilter = platformFilter.value; renderAllContent();});
-            statusFilter.addEventListener('change', () => {globalPreferences.statusFilter = statusFilter.value; renderAllContent();});
-            weekStartDayFilter.addEventListener('change', () => {currentWeekStartDate = getWeekStartDate(new Date(), weekStartDayFilter.value); renderAllContent();});
-            darkModeToggle.addEventListener('change', toggleDarkMode);
-            addPostBtn.addEventListener('click', () => isAdminLoggedIn ? openModal() : showLoginModal());
-            cancelBtn.addEventListener('click', closeModal); postForm.addEventListener('submit', handleFormSubmit);
-            modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-            prevWeekBtn.addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7); renderAllContent(); });
-            nextWeekBtn.addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() + 7); renderAllContent(); });
-            cancelDeleteBtn.addEventListener('click', () => deleteConfirmModal.classList.add('hidden')); confirmDeleteBtn.addEventListener('click', async () => { if(postIdToDelete) await deleteDoc(doc(db,`artifacts/${appId}/public/data/posts`, postIdToDelete)); deleteConfirmModal.classList.add('hidden'); });
-            adminLoginBtn.addEventListener('click', showLoginModal); adminLogoutBtn.addEventListener('click', logout);
-            cancelLoginBtn.addEventListener('click', hideLoginModal); submitLoginBtn.addEventListener('click', login);
-            adminPasswordInput.addEventListener('keypress', e => {if (e.key==='Enter') login();});
-            updateAdminUI(); renderAllContent();
+            setupEventListeners();
+            updateAdminUI();
+            // Initial render will be triggered by onAuthStateChanged
         });
     </script>
 </body>
