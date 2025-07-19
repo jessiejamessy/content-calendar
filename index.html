@@ -53,7 +53,6 @@
         .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
         .dark .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #475569; }
         
-        /* Dark Mode Base */
         .dark { background-color: #0f172a; color: #e2e8f0; }
         .dark .text-slate-800 { color: #e2e8f0; }
         .dark .text-slate-600, .dark .text-slate-500 { color: #94a3b8; }
@@ -61,14 +60,13 @@
         .dark .bg-slate-100 { background-color: #162135; }
         .dark .bg-slate-200, .dark .bg-slate-300 { background-color: #334155; }
         
-        /* MODIFIED: Restored the larger drop shadow for light mode */
         .day-column, .analytics-card {
             background-color: #ffffff;
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); /* shadow-lg */
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
         .dark .day-column, .dark .analytics-card {
             background-color: #1e293b;
-            box-shadow: none; /* No shadow in dark mode */
+            box-shadow: none;
         }
 
         #modal-content { background-color: #f8fafc; }
@@ -76,7 +74,6 @@
         #postModal input, #postModal select, #postModal textarea { background-color: #ffffff; border: 1px solid #000000; }
         .filter-select { background-color: #ffffff; color: #111827; border: 1px solid #d1d5db; }
 
-        /* Dark Mode Overrides */
         .dark #postModal label { color: #cbd5e1; }
         .dark #modal-content { background-color: #1e293b; }
         .dark #postModal input, .dark #postModal select, .dark #postModal textarea { background-color: #334155; border: 1px solid #64748b; }
@@ -224,6 +221,28 @@
                 return card;
             }
             
+            // MODIFIED: Added this new function to populate the platform filter
+            function populateFilters() {
+                const allPlatforms = new Set();
+                posts.forEach(post => {
+                    if (post.platforms) post.platforms.forEach(p => allPlatforms.add(p));
+                });
+
+                const currentFilterValue = ui.platformFilter.value;
+                while (ui.platformFilter.options.length > 1) {
+                    ui.platformFilter.remove(1);
+                }
+
+                Array.from(allPlatforms).sort().forEach(platform => {
+                    const option = document.createElement('option');
+                    option.value = platform;
+                    option.textContent = platform;
+                    ui.platformFilter.appendChild(option);
+                });
+                
+                ui.platformFilter.value = currentFilterValue;
+            }
+
             function renderAllContent() {
                 const weekStart = currentWeekStartDate;
                 const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 7));
@@ -236,13 +255,9 @@
                 ['currentWeekGrid', 'postedDailyGrid', 'allPostedContentContainer'].forEach(id => ui[id].innerHTML = '');
 
                 for (let i = 0; i < 7; i++) {
-                    const dayCol = document.createElement('div');
-                    dayCol.className = 'day-column rounded-lg p-2 space-y-2';
-                    dayCol.innerHTML = `<h3 class="font-bold text-base text-center text-brand-charcoal mb-2">${orderedDays[i]}</h3>`;
-                    ui.currentWeekGrid.appendChild(dayCol);
-                    
-                    const postedDayCol = dayCol.cloneNode(true);
-                    ui.postedDailyGrid.appendChild(postedDayCol);
+                    const dayColHtml = `<div class="day-column rounded-lg p-2 space-y-2"><h3 class="font-bold text-base text-center text-brand-charcoal mb-2">${orderedDays[i]}</h3></div>`;
+                    ui.currentWeekGrid.innerHTML += dayColHtml;
+                    ui.postedDailyGrid.innerHTML += dayColHtml;
                 }
                 
                 filteredWeeklyPosts.forEach(post => {
@@ -266,6 +281,8 @@
                     ui.currentUserIdDisplay.textContent = `UID: ${user.uid.slice(0, 6)}...`;
                     onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), snap => {
                         posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        // MODIFIED: Call populateFilters whenever data changes
+                        populateFilters();
                         renderAllContent();
                     });
                 } else { signInAnonymously(auth).catch(e => console.error("Anonymous sign-in failed", e)); }
