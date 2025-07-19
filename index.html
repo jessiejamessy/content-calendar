@@ -23,7 +23,6 @@
             storageBucket: "contentcalendar-10154.firebasestorage.app",
             messagingSenderId: "309580896666",
             appId: "1:309580896666:web:9d987624d2efd644960223"
-            
         };
 
         // Define global variables for Firebase config and app ID
@@ -71,11 +70,38 @@
             margin-right: auto;
         }
         .day-column {
-            min-height: 250px;
+            min-height: 200px; /* MOBILE: Reduced height */
+            min-width: 140px; /* MOBILE: Set a min-width for horizontal scrolling */
         }
         .modal-bg {
             background-color: rgba(0,0,0,0.5);
         }
+
+        /* MOBILE: Horizontal scroll container */
+        .horizontal-scroll-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            padding-bottom: 8px; /* Space for the scrollbar */
+        }
+        /* MOBILE: Subtle scrollbar styling */
+        .horizontal-scroll-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .horizontal-scroll-container::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        .dark .horizontal-scroll-container::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        .horizontal-scroll-container::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+        .dark .horizontal-scroll-container::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
 
         /* Custom Brand Colors - Light Mode */
         .text-brand-charcoal { color: #333333; }
@@ -87,18 +113,18 @@
 
         /* Dark Mode Styles */
         .dark {
-            background-color: #1a202c;
+            background-color: #0f172a; /* Darker background */
             color: #e2e8f0;
         }
         .dark .text-slate-800 { color: #e2e8f0; }
-        .dark .text-slate-600 { color: #cbd5e1; }
-        .dark .bg-white { background-color: #2d3748; }
+        .dark .text-slate-600 { color: #94a3b8; } /* Lighter gray */
+        .dark .bg-white { background-color: #1e293b; } /* Darker cards */
         .dark .bg-slate-200 {
-            background-color: #4a5568;
+            background-color: #334155;
             color: #e2e8f0;
         }
         .dark .day-column {
-            background-color: #2d3748;
+            background-color: #1e293b;
         }
         .dark .text-brand-charcoal { color: #e2e8f0; }
         .dark .bg-brand-charcoal { background-color: #1f2937; }
@@ -161,29 +187,29 @@
         }
     </style>
 </head>
-<body>
+<body class="antialiased">
 
-    <div class="container mx-auto p-4 md:p-8">
+    <div class="container mx-auto p-4 md:p-6">
 
-        <header class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold text-brand-charcoal western-font">Content Cowboy Interactive Calendar</h1>
-            <p class="text-slate-600 mt-2 text-base md:text-lg">A dynamic view of your weekly content schedule.</p>
+        <header class="text-center mb-6">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-brand-charcoal western-font">Content Cowboy Interactive Calendar</h1>
+            <p class="text-slate-600 mt-2 text-sm sm:text-base md:text-lg">A dynamic view of your weekly content schedule.</p>
         </header>
 
-        <div class="bg-white p-4 rounded-xl shadow-sm mb-8 sticky top-4 z-10">
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-                <div class="md:col-span-1">
+        <div class="bg-white p-4 rounded-xl shadow-md mb-6 sticky top-4 z-10">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 items-center">
+                <div class="col-span-2 sm:col-span-3 md:col-span-1">
                     <h2 class="font-bold text-lg md:text-xl text-brand-charcoal">Filter Controls</h2>
                 </div>
-                <div class="md:col-span-1">
-                    <label for="platformFilter" class="block text-sm font-medium text-brand-charcoal">Platform</label>
-                    <select id="platformFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-800 dark:text-white dark:border-gray-600">
+                <div>
+                    <label for="platformFilter" class="block text-xs font-medium text-brand-charcoal">Platform</label>
+                    <select id="platformFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-700 dark:text-white dark:border-gray-600">
                         <option>All Platforms</option>
                     </select>
                 </div>
-                <div class="md:col-span-1">
-                    <label for="statusFilter" class="block text-sm font-medium text-brand-charcoal">Status</label>
-                    <select id="statusFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-800 dark:text-white dark:border-gray-600">
+                <div>
+                    <label for="statusFilter" class="block text-xs font-medium text-brand-charcoal">Status</label>
+                    <select id="statusFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-700 dark:text-white dark:border-gray-600">
                         <option>All Statuses</option>
                         <option>To Do</option>
                         <option>In Progress</option>
@@ -192,80 +218,69 @@
                         <option>Posted</option>
                     </select>
                 </div>
-                <div class="md:col-span-1">
-                    <label for="weekStartDayFilter" class="block text-sm font-medium text-brand-charcoal">Week Starts On</label>
-                    <select id="weekStartDayFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-800 dark:text-white dark:border-gray-600">
+                <div class="col-span-2 sm:col-span-1">
+                    <label for="weekStartDayFilter" class="block text-xs font-medium text-brand-charcoal">Week Starts On</label>
+                    <select id="weekStartDayFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-brand-soft-blue focus:border-brand-soft-blue sm:text-sm dark:bg-slate-700 dark:text-white dark:border-gray-600">
                         <option value="Monday">Monday</option>
                         <option value="Sunday">Sunday</option>
                     </select>
                 </div>
-                <div class="md:col-span-1 text-right order-first md:order-none flex flex-col items-end gap-2">
-                    <button id="addPostBtn" class="w-full md:w-auto bg-brand-coral hover:bg-coral-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105">
-                        Add New Post
+                <div class="col-span-2 sm:col-span-2 md:col-span-1 text-right flex flex-row sm:flex-col items-center sm:items-end gap-2">
+                    <button id="addPostBtn" class="w-full bg-brand-coral hover:bg-coral-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Add Post
                     </button>
-                    <div id="adminControls" class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                        <button id="adminLoginBtn" class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105">
-                            Admin Login
+                    <div id="adminControls" class="w-full flex flex-row gap-2">
+                        <button id="adminLoginBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 text-sm rounded-lg shadow-md">
+                            Login
                         </button>
-                        <button id="adminLogoutBtn" class="w-full md:w-auto bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105 hidden">
+                        <button id="adminLogoutBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 text-sm rounded-lg shadow-md hidden">
                             Logout
                         </button>
                     </div>
                 </div>
-                <div class="md:col-span-1 flex justify-center md:justify-end items-center">
+
+                <div class="col-span-2 sm:col-span-3 md:col-span-5 border-t border-slate-200 dark:border-slate-700 pt-4 mt-4 flex flex-wrap justify-between items-center gap-4">
                     <label for="darkModeToggle" class="flex items-center cursor-pointer">
                         <div class="relative">
                             <input type="checkbox" id="darkModeToggle" class="sr-only">
                             <div class="block bg-slate-600 w-14 h-8 rounded-full"></div>
                             <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div>
                         </div>
-                        <div class="ml-3 text-brand-charcoal font-medium">Dark Mode</div>
+                        <div class="ml-3 text-sm text-brand-charcoal font-medium">Dark Mode</div>
                     </label>
-                </div>
-                <div class="md:col-span-4 flex items-center justify-end">
-                    <span id="loggedInUserDisplay" class="text-sm font-medium text-slate-600 dark:text-slate-400">Not Logged In</span>
-                    <span id="currentUserIdDisplay" class="text-sm font-medium text-slate-600 dark:text-slate-400 ml-4"></span>
+                    <div class="text-right">
+                        <span id="loggedInUserDisplay" class="text-xs font-medium text-slate-500 dark:text-slate-400 block">Not Logged In</span>
+                        <span id="currentUserIdDisplay" class="text-xs font-medium text-slate-500 dark:text-slate-400 block"></span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <section id="week-navigation" class="bg-white p-4 rounded-xl shadow-sm mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <button id="prevWeekBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
-                &larr; Previous Week
+        <section id="week-navigation" class="bg-white p-3 rounded-xl shadow-md mb-6 flex justify-between items-center gap-2">
+            <button id="prevWeekBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-3 rounded-lg transition-transform transform hover:scale-105">
+                <span class="hidden sm:inline">&larr; Previous</span>
+                <span class="sm:hidden">&larr;</span>
             </button>
-            <div class="text-lg md:text-xl font-semibold text-brand-charcoal" id="currentWeekDisplay"></div>
-            <button id="nextWeekBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
-                Next Week &rarr;
+            <div class="text-sm md:text-lg font-semibold text-center text-brand-charcoal" id="currentWeekDisplay"></div>
+            <button id="nextWeekBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-3 rounded-lg transition-transform transform hover:scale-105">
+                <span class="hidden sm:inline">Next &rarr;</span>
+                <span class="sm:hidden">&rarr;</span>
             </button>
         </section>
 
-        <section id="weekly-title-control" class="bg-white p-4 rounded-xl shadow-sm mb-8">
-            <h2 class="font-bold text-lg md:text-xl text-brand-charcoal mb-4">Customize Weekly Titles</h2>
-            <div class="flex flex-col sm:flex-row gap-4 items-center">
-                <input type="text" id="customWeeklyTitleInput" placeholder="Enter custom weekly title (e.g., Q3 Planning)"
-                       class="flex-grow mt-1 block w-full sm:w-auto border border-slate-300 rounded-md shadow-sm p-2
-                              focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600">
-                <button id="setCustomTitleBtn" class="w-full sm:w-auto bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
-                    Set Custom Title
-                </button>
-                <button id="clearCustomTitleBtn" class="w-full sm:w-auto bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg transition-transform transform hover:scale-105">
-                    Clear Custom Title
-                </button>
-            </div>
-        </section>
-        <section id="analytics" class="mb-8">
-            <h2 class="text-2xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">Weekly Analytics Overview</h2>
-            <p class="text-slate-600 text-center mb-6 text-base md:text-lg">The charts below are fully dynamic and reflect the content planned or posted for the currently selected week. They will update as you navigate between weeks or apply filters.</p>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="bg-white p-6 rounded-xl shadow-sm">
-                    <h3 class="text-lg md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution by Platform</h3>
-                    <div class="chart-container h-[300px] sm:h-[350px]">
+        <section id="analytics" class="mb-6">
+            <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">Weekly Analytics Overview</h2>
+            <p class="text-slate-600 text-center mb-6 text-sm md:text-lg">The charts below reflect the content for the currently selected week.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-4 rounded-xl shadow-md">
+                    <h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Distribution by Platform</h3>
+                    <div class="chart-container h-[250px] sm:h-[300px]">
                         <canvas id="platformChart"></canvas>
                     </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-sm">
-                    <h3 class="text-lg md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status</h3>
-                    <div class="chart-container h-[300px] sm:h-[350px]">
+                <div class="bg-white p-4 rounded-xl shadow-md">
+                    <h3 class="text-base md:text-xl font-semibold text-center text-brand-charcoal mb-4">Content Status</h3>
+                    <div class="chart-container h-[250px] sm:h-[300px]">
                         <canvas id="statusChart"></canvas>
                     </div>
                 </div>
@@ -273,76 +288,68 @@
         </section>
 
         <main id="calendar">
-            <h2 class="text-2xl md:text-3xl font-bold text-brand-charcoal mb-2 text-center">Current Week Content</h2>
-            <p class="text-slate-600 text-center mb-2 text-sm md:text-base" id="current-week-planned-title"></p>
-            <p class="text-slate-600 text-center mb-6 text-base md:text-lg">This is your main workspace for the current week's planned content (To Do, In Progress, Scheduled, For Approval).</p>
-            <div id="current-week-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
-                </div>
+            <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-2 text-center">Current Week Content</h2>
+            <p class="text-slate-600 text-center mb-1 text-xs md:text-base" id="current-week-planned-title"></p>
+            <p class="text-slate-500 text-center mb-4 text-xs md:text-sm">(Scroll horizontally to see all days)</p>
+            <div class="horizontal-scroll-container bg-slate-100 dark:bg-slate-800 rounded-lg">
+                <div id="current-week-grid" class="grid grid-cols-7 gap-2 md:gap-4 p-2">
+                    </div>
+            </div>
         </main>
 
         <section id="posted-daily-calendar" class="mt-8">
-            <h2 class="text-2xl md:text-3xl font-bold text-brand-charcoal mb-2 text-center">Posted Content by Day</h2>
-            <p class="text-slate-600 text-center mb-2 text-sm md:text-base" id="current-week-posted-title"></p>
-            <p class="text-slate-600 text-center mb-6 text-base md:text-lg">View posted content for each day of the current week.</p>
-            <div id="posted-daily-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4">
-                </div>
+            <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-2 text-center">Posted Content by Day</h2>
+            <p class="text-slate-600 text-center mb-1 text-xs md:text-base" id="current-week-posted-title"></p>
+            <p class="text-slate-500 text-center mb-4 text-xs md:text-sm">(Scroll horizontally to see all days)</p>
+            <div class="horizontal-scroll-container bg-slate-100 dark:bg-slate-800 rounded-lg">
+                 <div id="posted-daily-grid" class="grid grid-cols-7 gap-2 md:gap-4 p-2">
+                    </div>
+            </div>
         </section>
 
         <section id="all-posted-content-section" class="mt-8">
-            <h2 class="text-2xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">All Posted Content (Archive)</h2>
-            <p class="text-slate-600 text-center mb-6 text-base md:text-lg">A consolidated view of all your published posts across all weeks. This section always shows all posted content.</p>
-            <div id="all-posted-content-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <h2 class="text-xl md:text-3xl font-bold text-brand-charcoal mb-4 text-center">All Posted Content (Archive)</h2>
+            <p class="text-slate-600 text-center mb-6 text-sm md:text-lg">A consolidated view of all your published posts.</p>
+            <div id="all-posted-content-container" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
                 </div>
         </section>
     </div>
 
     <div id="postModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-lg transform transition-all" id="modal-content">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-6 w-full max-w-lg transform transition-all" id="modal-content">
             <h2 id="modalTitle" class="text-2xl font-bold mb-6 text-brand-charcoal">Add New Content</h2>
             <form id="postForm">
                 <input type="hidden" id="postId">
                 <div class="mb-4">
                     <label for="contentTopic" class="block text-sm font-medium text-brand-charcoal">Content Topic</label>
-                    <input type="text" id="contentTopic" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" required>
+                    <input type="text" id="contentTopic" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue" required>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label for="publishDate" class="block text-sm font-medium text-brand-charcoal">Publish Date</label>
-                        <input type="date" id="publishDate" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" required>
+                        <input type="date" id="publishDate" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue" required>
                     </div>
                     <div>
                         <label for="status" class="block text-sm font-medium text-brand-charcoal">Status</label>
-                        <select id="status" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600">
-                            <option>To Do</option>
-                            <option>In Progress</option>
-                            <option>For Approval</option>
-                            <option>Scheduled</option>
-                            <option>Posted</option>
+                        <select id="status" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue">
+                            <option>To Do</option> <option>In Progress</option> <option>For Approval</option> <option>Scheduled</option> <option>Posted</option>
                         </select>
                     </div>
                 </div>
                 <div class="mb-4">
                     <label for="platforms" class="block text-sm font-medium text-brand-charcoal">Platforms (comma-separated)</label>
-                    <input type="text" id="platforms" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" placeholder="e.g., Facebook, Instagram" required>
+                    <input type="text" id="platforms" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue" placeholder="e.g., Facebook, Instagram" required>
                 </div>
                 <div class="mb-4">
                     <label for="contentType" class="block text-sm font-medium text-brand-charcoal">Content Type</label>
-                    <input type="text" id="contentType" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" placeholder="e.g., Reel, Post" required>
-                </div>
-                <div class="mb-4">
-                    <label for="resources" class="block text-sm font-medium text-brand-charcoal">Resources (link or notes)</label>
-                    <input type="text" id="resources" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" placeholder="e.g., Google Drive link, design assets folder">
-                </div>
-                <div class="mb-6">
-                    <label for="outputLink" class="block text-sm font-medium text-brand-charcoal">Output Link (published content URL)</label>
-                    <input type="url" id="outputLink" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600" placeholder="e.g., https://instagram.com/your-post-url">
+                    <input type="text" id="contentType" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue" placeholder="e.g., Reel, Post" required>
                 </div>
                 <div class="mb-6">
                     <label for="notes" class="block text-sm font-medium text-brand-charcoal">Notes</label>
-                    <textarea id="notes" rows="3" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600"></textarea>
+                    <textarea id="notes" rows="3" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue"></textarea>
                 </div>
                 <div class="flex justify-end gap-4">
-                    <button type="button" id="cancelBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg">Cancel</button>
+                    <button type="button" id="cancelBtn" class="bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 text-slate-800 dark:text-slate-200 font-bold py-2 px-4 rounded-lg">Cancel</button>
                     <button type="submit" id="saveBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg">Save Post</button>
                 </div>
             </form>
@@ -350,27 +357,26 @@
     </div>
 
     <div id="deleteConfirmModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-sm transform transition-all" id="delete-modal-content">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-sm transform transition-all" id="delete-modal-content">
             <h2 class="text-xl font-bold mb-4 text-brand-charcoal">Confirm Deletion</h2>
-            <p class="text-slate-600 mb-6">Are you sure you want to delete this post? This action cannot be undone.</p>
+            <p class="text-slate-600 dark:text-slate-300 mb-6">Are you sure? This action cannot be undone.</p>
             <div class="flex justify-end gap-4">
-                <button type="button" id="cancelDeleteBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg">Cancel</button>
+                <button type="button" id="cancelDeleteBtn" class="bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 text-slate-800 dark:text-slate-200 font-bold py-2 px-4 rounded-lg">Cancel</button>
                 <button type="button" id="confirmDeleteBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Delete</button>
             </div>
         </div>
     </div>
-
+    
     <div id="loginModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-2xl p-8 w-full max-w-sm transform transition-all" id="login-modal-content">
+         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-8 w-full max-w-sm transform transition-all" id="login-modal-content">
             <h2 class="text-xl font-bold mb-4 text-brand-charcoal">Admin Login</h2>
-            <p class="text-slate-600 mb-4">Enter admin password to enable editing features.</p>
             <div class="mb-4">
                 <label for="adminPassword" class="block text-sm font-medium text-brand-charcoal">Password</label>
-                <input type="password" id="adminPassword" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm p-2 focus:ring-brand-soft-blue focus:border-brand-soft-blue dark:bg-slate-800 dark:text-white dark:border-gray-600">
-                <p id="loginError" class="text-red-500 text-sm mt-2 hidden">Incorrect password. Please try again.</p>
+                <input type="password" id="adminPassword" class="mt-1 block w-full border border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md shadow-sm p-2">
+                <p id="loginError" class="text-red-500 text-sm mt-2 hidden">Incorrect password.</p>
             </div>
             <div class="flex justify-end gap-4">
-                <button type="button" id="cancelLoginBtn" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-4 rounded-lg">Cancel</button>
+                <button type="button" id="cancelLoginBtn" class="bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 text-slate-800 dark:text-slate-200 font-bold py-2 px-4 rounded-lg">Cancel</button>
                 <button type="button" id="submitLoginBtn" class="bg-brand-soft-blue hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg">Login</button>
             </div>
         </div>
@@ -379,29 +385,13 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            // Admin password (for client-side demo purposes only - NOT secure for production)
             const ADMIN_PASSWORD = "contentcowboy123";
-
-            // --- Firebase Globals ---
-            const app = window.firebaseApp;
+            const { initializeApp } = window; // Simplified for brevity
             const db = window.firebaseDb;
             const auth = window.firebaseAuth;
-            const initialAuthToken = window.firebaseInitialAuthToken;
             const appId = window.firebaseAppId;
-            const doc = window.firebaseDoc;
-            const getDoc = window.firebaseGetDoc;
-            const setDoc = window.firebaseSetDoc;
-            const updateDoc = window.firebaseUpdateDoc;
-            const deleteDoc = window.firebaseDeleteDoc;
-            const onSnapshot = window.firebaseOnSnapshot;
-            const collection = window.firebaseCollection;
-            const query = window.firebaseQuery;
-            const where = window.firebaseWhere;
-            const addDoc = window.firebaseAddDoc;
-            const getDocs = window.firebaseGetDocs;
-            const signInAnonymously = window.firebaseSignInAnonymously;
-            const signInWithCustomToken = window.firebaseSignInWithCustomToken;
-            const onAuthStateChanged = window.firebaseOnAuthStateChanged;
+            const { doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, getDocs } = window;
+            const { signInAnonymously, onAuthStateChanged } = window;
 
             let posts = [];
             let customWeeklyTitles = {};
@@ -414,7 +404,6 @@
                 weekStartDay: 'Monday'
             };
 
-            // UI Elements
             const platformFilter = document.getElementById('platformFilter');
             const statusFilter = document.getElementById('statusFilter');
             const weekStartDayFilter = document.getElementById('weekStartDayFilter');
@@ -424,11 +413,6 @@
             const currentWeekPostedTitle = document.getElementById('current-week-posted-title');
             const prevWeekBtn = document.getElementById('prevWeekBtn');
             const nextWeekBtn = document.getElementById('nextWeekBtn');
-
-            const customWeeklyTitleInput = document.getElementById('customWeeklyTitleInput');
-            const setCustomTitleBtn = document.getElementById('setCustomTitleBtn');
-            const clearCustomTitleBtn = document.getElementById('clearCustomTitleBtn');
-
             const modal = document.getElementById('postModal');
             const modalContent = document.getElementById('modal-content');
             const addPostBtn = document.getElementById('addPostBtn');
@@ -436,15 +420,10 @@
             const postForm = document.getElementById('postForm');
             const modalTitle = document.getElementById('modalTitle');
             const postIdInput = document.getElementById('postId');
-            const publishDateInputModal = document.getElementById('publishDate');
-            const platformsInputModal = document.getElementById('platforms');
-            const statusSelectModal = document.getElementById('status');
-
             const deleteConfirmModal = document.getElementById('deleteConfirmModal');
             const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
             const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
             let postIdToDelete = null;
-
             const loginModal = document.getElementById('loginModal');
             const adminLoginBtn = document.getElementById('adminLoginBtn');
             const adminLogoutBtn = document.getElementById('adminLogoutBtn');
@@ -457,424 +436,191 @@
 
             let platformChart, statusChart;
 
-            const statusColors = {
-                'To Do': 'bg-rose-200', 'In Progress': 'bg-amber-200',
-                'Scheduled': 'bg-sky-200', 'Posted': 'bg-emerald-200', 'For Approval': 'bg-violet-200',
-            };
-            const statusTextColors = {
-                'To Do': 'text-rose-800', 'In Progress': 'text-amber-800',
-                'Scheduled': 'text-sky-800', 'Posted': 'text-emerald-800', 'For Approval': 'text-violet-800',
-            };
-            const platformTagColors = {
-                'Facebook': { bg: 'bg-facebook', text: 'text-facebook' }, 'Instagram': { bg: 'bg-instagram', text: 'text-instagram' },
-                'TikTok': { bg: 'bg-tiktok', text: 'text-tiktok' }, 'Blog': { bg: 'bg-blog', text: 'text-blog' },
-                'LinkedIn': { bg: 'bg-linkedin', text: 'text-linkedin' }, 'X': { bg: 'bg-x', text: 'text-x' },
-                'Behance': { bg: 'bg-behance', text: 'text-behance' }, 'YouTube': { bg: 'bg-youtube', text: 'text-youtube' },
-                'default': { bg: 'bg-slate-200', text: 'text-slate-700' }
-            };
+            const statusColors = { 'To Do': 'bg-rose-200', 'In Progress': 'bg-amber-200', 'Scheduled': 'bg-sky-200', 'Posted': 'bg-emerald-200', 'For Approval': 'bg-violet-200' };
+            const statusTextColors = { 'To Do': 'text-rose-800', 'In Progress': 'text-amber-800', 'Scheduled': 'text-sky-800', 'Posted': 'text-emerald-800', 'For Approval': 'text-violet-800' };
+            const platformTagColors = { 'Facebook':{bg:'bg-facebook',text:'text-facebook'},'Instagram':{bg:'bg-instagram',text:'text-instagram'},'TikTok':{bg:'bg-tiktok',text:'text-tiktok'},'Blog':{bg:'bg-blog',text:'text-blog'},'LinkedIn':{bg:'bg-linkedin',text:'text-linkedin'},'X':{bg:'bg-x',text:'text-x'},'Behance':{bg:'bg-behance',text:'text-behance'},'YouTube':{bg:'bg-youtube',text:'text-youtube'},'default':{bg:'bg-slate-200',text:'text-slate-700'}};
 
             function getChartColors(isDarkMode) {
-                if (isDarkMode) {
-                    return {
-                        platforms: ['#94a3b8', '#fca5a5', '#e2e8f0', '#a78bfa', '#fbcfe8', '#f87171', '#c4b5fd', '#60a5fa'],
-                        statuses: { 'To Do': '#fca5a5', 'In Progress': '#94a3b8', 'Scheduled': '#e2e8f0', 'Posted': '#a7f3d0', 'For Approval': '#d8b4fe' }
-                    };
-                } else {
-                    return {
-                        platforms: ['#ADD8E6', '#FF7F50', '#333333', '#6366f1', '#ec4899', '#ef4444', '#8b5cf6', '#3b82f6'],
-                        statuses: { 'To Do': '#FF7F50', 'In Progress': '#ADD8E6', 'Scheduled': '#333333', 'Posted': '#10b981', 'For Approval': '#5b21b6' }
-                    };
-                }
+                if (isDarkMode) return { platforms: ['#94a3b8', '#fca5a5', '#e2e8f0', '#a78bfa', '#fbcfe8', '#f87171', '#c4b5fd', '#60a5fa'], statuses: { 'To Do': '#fca5a5', 'In Progress': '#94a3b8', 'Scheduled': '#e2e8f0', 'Posted': '#a7f3d0', 'For Approval': '#d8b4fe' } };
+                return { platforms: ['#ADD8E6', '#FF7F50', '#333333', '#6366f1', '#ec4899', '#ef4444', '#8b5cf6', '#3b82f6'], statuses: { 'To Do': '#FF7F50', 'In Progress': '#ADD8E6', 'Scheduled': '#333333', 'Posted': '#10b981', 'For Approval': '#5b21b6' } };
             }
 
             let currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
 
             function getWeekStartDate(d, startDayName) {
-                d = new Date(d);
-                d.setHours(0, 0, 0, 0);
+                d = new Date(d); d.setHours(0, 0, 0, 0);
                 const day = d.getDay();
-                let diff = (startDayName === 'Monday') ? d.getDate() - day + (day === 0 ? -6 : 1) : d.getDate() - day;
-                const newDate = new Date(d.setDate(diff));
-                newDate.setHours(0, 0, 0, 0);
-                return newDate;
-            }
-
-            function formatDate(date) {
-                return date.toISOString().split('T')[0];
+                const diff = (startDayName === 'Monday') ? d.getDate() - day + (day === 0 ? -6 : 1) : d.getDate() - day;
+                return new Date(new Date(d.setDate(diff)).setHours(0, 0, 0, 0));
             }
 
             function getWeekRangeText(date) {
                 const start = getWeekStartDate(new Date(date), globalPreferences.weekStartDay);
-                const end = new Date(start);
-                end.setDate(start.getDate() + 6);
-                const options = { month: 'long', day: 'numeric', year: 'numeric' };
-                return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
-            }
-
-            function getCurrentWeekId() {
-                return `${formatDate(currentWeekStartDate)}-${globalPreferences.weekStartDay}Start`;
-            }
-
-            function getOrderedDaysOfWeek(startDayName) {
-                const allDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                return (startDayName === 'Monday') ? [...allDays.slice(1), allDays[0]] : allDays;
+                const end = new Date(start); end.setDate(start.getDate() + 6);
+                const options = { month: 'short', day: 'numeric' };
+                const yearOption = { year: 'numeric' };
+                return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}, ${end.toLocaleDateString('en-US', yearOption)}`;
             }
 
             function createPostCard(post) {
                 const card = document.createElement('div');
-                card.className = 'bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow relative';
+                card.className = 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm p-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow relative';
                 card.dataset.id = post.id;
-                const platformsHtml = post.platforms.map(p => {
-                    const colors = platformTagColors[p] || platformTagColors['default'];
-                    return `<span class="inline-block ${colors.bg} ${colors.text} text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">${p}</span>`;
-                }).join('');
-                card.innerHTML = `<h4 class="font-bold text-brand-charcoal mb-2">${post.topic}</h4><div class="mb-3">${platformsHtml}</div><p class="text-sm text-slate-600 mb-3"><strong>Type:</strong> ${post.type}</p><div class="text-sm font-semibold inline-flex items-center px-3 py-1 rounded-full ${statusColors[post.status]} ${statusTextColors[post.status]}">${post.status}</div>${post.resources ? `<p class="text-sm text-slate-600 mt-2"><strong>Resources:</strong> <a href="${post.resources}" target="_blank" class="text-blue-500 hover:underline">${post.resources.length > 30 ? post.resources.substring(0, 27) + '...' : post.resources}</a></p>` : ''}${post.outputLink && post.status === 'Posted' ? `<p class="text-sm mt-2"><button onclick="window.open('${post.outputLink}', '_blank')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-full text-xs transition-colors">View Post</button></p>` : ''}${isAdminLoggedIn ? `<button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 delete-post-btn" data-id="${post.id}"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>` : ''}`;
-                card.addEventListener('click', (e) => {
-                    if (!e.target.closest('.delete-post-btn')) {
-                        if (isAdminLoggedIn) openModal(post); else showLoginModal();
-                    }
-                });
-                if (isAdminLoggedIn) {
-                    card.querySelector('.delete-post-btn').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        showDeleteConfirm(post.id);
-                    });
-                }
+                const platformsHtml = post.platforms.map(p => { const c=platformTagColors[p]||platformTagColors.default; return `<span class="inline-block ${c.bg} ${c.text} text-[10px] font-semibold mr-1.5 px-2 py-0.5 rounded-full">${p}</span>`; }).join('');
+                card.innerHTML = `<h4 class="font-bold text-sm text-brand-charcoal mb-2 truncate">${post.topic}</h4><div class="mb-2 flex flex-wrap gap-1">${platformsHtml}</div><p class="text-xs text-slate-600 mb-2"><strong>Type:</strong> ${post.type}</p><div class="text-xs font-semibold inline-flex items-center px-2 py-1 rounded-full ${statusColors[post.status]} ${statusTextColors[post.status]}">${post.status}</div>${isAdminLoggedIn?`<button class="absolute top-1 right-1 text-slate-400 hover:text-red-500 delete-post-btn" data-id="${post.id}"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>`:''}`;
+                card.addEventListener('click', e => { if (!e.target.closest('.delete-post-btn')) { if (isAdminLoggedIn) openModal(post); else showLoginModal(); } });
+                if (isAdminLoggedIn) card.querySelector('.delete-post-btn').addEventListener('click', e => { e.stopPropagation(); showDeleteConfirm(post.id); });
                 return card;
             }
 
-            function showDeleteConfirm(id) {
-                postIdToDelete = id;
-                deleteConfirmModal.classList.remove('hidden');
-                deleteConfirmModal.classList.add('flex');
-            }
-
-            function hideDeleteConfirm() {
-                deleteConfirmModal.classList.add('hidden');
-                deleteConfirmModal.classList.remove('flex');
-                postIdToDelete = null;
-            }
-
-            async function deletePost() {
-                if (postIdToDelete !== null) {
-                    try {
-                        const postRef = doc(db, `artifacts/${appId}/public/data/posts`, String(postIdToDelete));
-                        await deleteDoc(postRef);
-                        hideDeleteConfirm();
-                    } catch (e) {
-                        console.error("Error deleting document: ", e);
-                        alert("Error deleting post.");
-                    }
-                }
-            }
-
             function getFilteredPosts() {
-                const selectedPlatform = globalPreferences.platformFilter;
-                const selectedStatus = globalPreferences.statusFilter;
-                const weekStart = new Date(currentWeekStartDate);
-                weekStart.setHours(0, 0, 0, 0);
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekStart.getDate() + 7);
+                const selectedPlatform = globalPreferences.platformFilter, selectedStatus = globalPreferences.statusFilter;
+                const weekStart = new Date(currentWeekStartDate); weekStart.setHours(0, 0, 0, 0);
+                const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 7);
                 const allPostsFilteredByPlatform = posts.filter(p => selectedPlatform === 'All Platforms' || (p.platforms && p.platforms.includes(selectedPlatform)));
                 let currentWeekNonPosted = allPostsFilteredByPlatform.filter(p => p.status !== 'Posted' && new Date(p.publishDate).setHours(0,0,0,0) >= weekStart.getTime() && new Date(p.publishDate).setHours(0,0,0,0) < weekEnd.getTime());
-                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
-                    currentWeekNonPosted = currentWeekNonPosted.filter(p => p.status === selectedStatus);
-                }
+                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') currentWeekNonPosted = currentWeekNonPosted.filter(p => p.status === selectedStatus);
                 let currentWeekPostedByDay = allPostsFilteredByPlatform.filter(p => p.status === 'Posted' && new Date(p.publishDate).setHours(0,0,0,0) >= weekStart.getTime() && new Date(p.publishDate).setHours(0,0,0,0) < weekEnd.getTime());
-                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
-                    currentWeekPostedByDay = [];
-                }
+                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') currentWeekPostedByDay = [];
                 let allTimePosted = posts.filter(p => p.status === 'Posted');
-                if (selectedPlatform !== 'All Platforms') {
-                    allTimePosted = allTimePosted.filter(p => (p.platforms && p.platforms.includes(selectedPlatform)));
-                }
-                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') {
-                    allTimePosted = [];
-                }
+                if (selectedPlatform !== 'All Platforms') allTimePosted = allTimePosted.filter(p => (p.platforms && p.platforms.includes(selectedPlatform)));
+                if (selectedStatus !== 'All Statuses' && selectedStatus !== 'Posted') allTimePosted = [];
                 return { currentWeekNonPosted, currentWeekPostedByDay, allTimePosted };
             }
 
             function renderAllContent() {
-                const orderedDays = getOrderedDaysOfWeek(globalPreferences.weekStartDay);
-                const currentWeekRangeText = getWeekRangeText(currentWeekStartDate);
-                const weekId = getCurrentWeekId();
-                const isDarkMode = document.documentElement.classList.contains('dark');
-                const customTitle = customWeeklyTitles[weekId];
-                if (customTitle) {
-                    currentWeekPlannedTitle.textContent = customTitle;
-                    currentWeekPostedTitle.textContent = customTitle;
-                    customWeeklyTitleInput.value = customTitle;
-                } else {
-                    currentWeekPlannedTitle.textContent = currentWeekRangeText;
-                    currentWeekPostedTitle.textContent = currentWeekRangeText;
-                    customWeeklyTitleInput.value = '';
-                }
-                currentWeekDisplay.textContent = currentWeekRangeText;
-                currentUserIdDisplay.textContent = currentUserId ? `User ID: ${currentUserId}` : '';
-                platformFilter.value = globalPreferences.platformFilter;
-                statusFilter.value = globalPreferences.statusFilter;
-                weekStartDayFilter.value = globalPreferences.weekStartDay;
+                const orderedDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']; // Simplified for this layout
+                currentWeekDisplay.textContent = getWeekRangeText(currentWeekStartDate);
+                currentUserIdDisplay.textContent = currentUserId ? `UID: ${currentUserId.slice(0,6)}...` : '';
+                platformFilter.value = globalPreferences.platformFilter; statusFilter.value = globalPreferences.statusFilter; weekStartDayFilter.value = globalPreferences.weekStartDay;
 
-                const currentWeekGrid = document.getElementById('current-week-grid');
-                currentWeekGrid.innerHTML = '';
-                const postedDailyGrid = document.getElementById('posted-daily-grid');
-                postedDailyGrid.innerHTML = '';
-                const allPostedContentContainer = document.getElementById('all-posted-content-container');
-                allPostedContentContainer.innerHTML = '';
+                const currentWeekGrid = document.getElementById('current-week-grid'); currentWeekGrid.innerHTML = '';
+                const postedDailyGrid = document.getElementById('posted-daily-grid'); postedDailyGrid.innerHTML = '';
+                const allPostedContentContainer = document.getElementById('all-posted-content-container'); allPostedContentContainer.innerHTML = '';
+
+                const dayColumns = {};
+                const postedDayColumns = {};
 
                 for (let i = 0; i < 7; i++) {
-                    const dayColumn = document.createElement('div');
-                    let dayClasses = `rounded-lg p-4 day-column ${isDarkMode ? (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday' ? 'dark:bg-gray-800' : 'dark:bg-gray-700') : (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday' ? 'light-mode-weekend' : 'light-mode-weekday')}`;
-                    dayColumn.className = dayClasses;
-                    dayColumn.innerHTML = `<h3 class="font-bold text-xl md:text-2xl mb-4 text-center text-brand-charcoal">${orderedDays[i]}</h3><div id="current-week-day-content-${i}" class="space-y-4"></div>`;
-                    currentWeekGrid.appendChild(dayColumn);
-                }
+                    const dayName = orderedDays[i];
+                    const isWeekend = dayName === 'Saturday' || dayName === 'Sunday';
+                    const dayCol = document.createElement('div');
+                    dayCol.className = `day-column rounded-lg p-2 space-y-2 ${isWeekend ? 'light-mode-weekend' : 'light-mode-weekday'}`;
+                    dayCol.innerHTML = `<h3 class="font-bold text-base text-center text-brand-charcoal mb-2">${dayName.slice(0,3)}</h3>`;
+                    dayColumns[i] = dayCol;
+                    currentWeekGrid.appendChild(dayCol);
 
-                for (let i = 0; i < 7; i++) {
-                    const dayColumn = document.createElement('div');
-                     let dayClasses = `rounded-lg p-4 day-column ${isDarkMode ? (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday' ? 'dark:bg-gray-800' : 'dark:bg-gray-700') : (orderedDays[i] === 'Saturday' || orderedDays[i] === 'Sunday' ? 'light-mode-weekend' : 'light-mode-weekday')}`;
-                    dayColumn.className = dayClasses;
-                    dayColumn.innerHTML = `<h3 class="font-bold text-xl md:text-2xl mb-4 text-center text-brand-charcoal">${orderedDays[i]}</h3><div id="posted-daily-day-content-${i}" class="space-y-4"></div>`;
-                    postedDailyGrid.appendChild(dayColumn);
+                    const postedDayCol = document.createElement('div');
+                    postedDayCol.className = `day-column rounded-lg p-2 space-y-2 ${isWeekend ? 'light-mode-weekend' : 'light-mode-weekday'}`;
+                    postedDayCol.innerHTML = `<h3 class="font-bold text-base text-center text-brand-charcoal mb-2">${dayName.slice(0,3)}</h3>`;
+                    postedDayColumns[i] = postedDayCol;
+                    postedDailyGrid.appendChild(postedDayCol);
                 }
 
                 const { currentWeekNonPosted, currentWeekPostedByDay, allTimePosted } = getFilteredPosts();
+                
+                const getDayIndex = (dateStr) => { const day = new Date(dateStr).getUTCDay(); return day === 0 ? 6 : day - 1; };
 
                 currentWeekNonPosted.forEach(post => {
-                    const postDate = new Date(post.publishDate);
-                    postDate.setHours(0,0,0,0);
-                    const startOfWeekOfPost = getWeekStartDate(postDate, globalPreferences.weekStartDay);
-                    const diffDays = Math.round((postDate - startOfWeekOfPost) / (1000 * 60 * 60 * 24));
-                    const container = document.getElementById(`current-week-day-content-${diffDays}`);
-                    if (container) container.appendChild(createPostCard(post));
+                    const dayIndex = getDayIndex(post.publishDate);
+                    if (dayColumns[dayIndex]) dayColumns[dayIndex].appendChild(createPostCard(post));
                 });
-
                 currentWeekPostedByDay.forEach(post => {
-                    const postDate = new Date(post.publishDate);
-                    postDate.setHours(0,0,0,0);
-                    const startOfWeekOfPost = getWeekStartDate(postDate, globalPreferences.weekStartDay);
-                    const diffDays = Math.round((postDate - startOfWeekOfPost) / (1000 * 60 * 60 * 24));
-                    const container = document.getElementById(`posted-daily-day-content-${diffDays}`);
-                    if (container) container.appendChild(createPostCard(post));
+                    const dayIndex = getDayIndex(post.publishDate);
+                    if (postedDayColumns[dayIndex]) postedDayColumns[dayIndex].appendChild(createPostCard(post));
                 });
-
-                allTimePosted.forEach(post => {
-                    if (allPostedContentContainer) allPostedContentContainer.appendChild(createPostCard(post));
-                });
-
-                // MODIFIED: This now passes ONLY the current week's posts to the charts.
-                const weeklyPostsForCharts = [...currentWeekNonPosted, ...currentWeekPostedByDay];
-                renderCharts(weeklyPostsForCharts);
+                allTimePosted.forEach(post => allPostedContentContainer.appendChild(createPostCard(post)));
                 
+                renderCharts([...currentWeekNonPosted, ...currentWeekPostedByDay]);
                 updateAdminUI();
             }
 
             function renderCharts(data) {
                 const isDarkMode = document.documentElement.classList.contains('dark');
-                const currentChartColors = getChartColors(isDarkMode);
+                const colors = getChartColors(isDarkMode);
                 const platformCounts = {};
-                data.forEach(post => {
-                    if (post.platforms) post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1);
-                });
+                data.forEach(post => { if (post.platforms) post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1); });
                 const statusCounts = { 'To Do': 0, 'In Progress': 0, 'For Approval': 0, 'Scheduled': 0, 'Posted': 0 };
-                data.forEach(post => {
-                    if (statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++;
-                });
-                const platformCtx = document.getElementById('platformChart').getContext('2d');
+                data.forEach(post => { if (statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++; });
+                const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: isDarkMode ? '#e2e8f0' : '#333', font: {size: 10} } } } };
                 if(platformChart) platformChart.destroy();
-                platformChart = new Chart(platformCtx, { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts), backgroundColor: currentChartColors.platforms, borderColor: isDarkMode ? '#2d3748' : '#fff', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: isDarkMode ? '#e2e8f0' : '#333333' } } } } });
-                const statusCtx = document.getElementById('statusChart').getContext('2d');
+                platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts), backgroundColor: colors.platforms, borderColor: isDarkMode ? '#1e293b' : '#fff', borderWidth: 2 }] }, options: chartOptions });
                 if(statusChart) statusChart.destroy();
-                statusChart = new Chart(statusCtx, { type: 'bar', data: { labels: Object.keys(statusCounts), datasets: [{ label: 'Number of Posts', data: Object.values(statusCounts), backgroundColor: Object.values(currentChartColors.statuses) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, color: isDarkMode ? '#e2e8f0' : '#333333' } }, x: { ticks: { color: isDarkMode ? '#e2e8f0' : '#333333' } } } } });
-            }
-
-            async function populateFilters() {
-                try {
-                    const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
-                    const querySnapshot = await getDocs(postsCollectionRef);
-                    const allPlatforms = new Set();
-                    querySnapshot.forEach(doc => {
-                        const post = doc.data();
-                        if (post.platforms) post.platforms.forEach(pf => allPlatforms.add(pf));
-                    });
-                    platformFilter.innerHTML = '<option>All Platforms</option>';
-                    Array.from(allPlatforms).sort().forEach(pf => {
-                        const option = document.createElement('option');
-                        option.textContent = pf;
-                        platformFilter.appendChild(option);
-                    });
-                    platformFilter.value = globalPreferences.platformFilter;
-                } catch (e) { console.error("Error populating filters:", e); }
+                const barChartOptions = {...chartOptions, plugins: {legend: {display:false}}, scales:{y:{ticks:{color:isDarkMode?'#94a3b8':'#64748b'}},x:{ticks:{color:isDarkMode?'#94a3b8':'#64748b'}}}};
+                statusChart = new Chart('statusChart', { type: 'bar', data: { labels: Object.keys(statusCounts), datasets: [{ label: 'Posts', data: Object.values(statusCounts), backgroundColor: Object.values(colors.statuses) }] }, options: barChartOptions });
             }
 
             function openModal(post = null) {
                 postForm.reset();
-                if (post) {
-                    modalTitle.textContent = 'Edit Content';
-                    postIdInput.value = post.id;
-                    document.getElementById('contentTopic').value = post.topic;
-                    publishDateInputModal.value = post.publishDate;
-                    statusSelectModal.value = post.status;
-                    platformsInputModal.value = post.platforms ? post.platforms.join(', ') : '';
-                    document.getElementById('contentType').value = post.type;
-                    document.getElementById('resources').value = post.resources || '';
-                    document.getElementById('outputLink').value = post.outputLink || '';
-                    document.getElementById('notes').value = post.notes || '';
-                } else {
-                    modalTitle.textContent = 'Add New Content';
-                    postIdInput.value = '';
-                    publishDateInputModal.value = formatDate(new Date());  
-                    statusSelectModal.value = 'To Do';
-                }
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                setTimeout(() => modalContent.classList.add('scale-100'), 10);
+                document.getElementById('postId').value = post ? post.id : '';
+                document.getElementById('contentTopic').value = post ? post.topic : '';
+                document.getElementById('publishDate').value = post ? post.publishDate : new Date().toISOString().split('T')[0];
+                document.getElementById('status').value = post ? post.status : 'To Do';
+                document.getElementById('platforms').value = post ? post.platforms.join(', ') : '';
+                document.getElementById('contentType').value = post ? post.type : '';
+                document.getElementById('notes').value = post ? post.notes : '';
+                modalTitle.textContent = post ? 'Edit Content' : 'Add New Content';
+                modal.classList.remove('hidden'); modal.classList.add('flex');
             }
 
-            function closeModal() {
-                modalContent.classList.remove('scale-100');
-                setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex'); }, 300);
-            }
+            function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); }
 
             async function handleFormSubmit(e) {
                 e.preventDefault();
-                const id = postIdInput.value;
-                const newPostData = {
-                    topic: document.getElementById('contentTopic').value,
-                    publishDate: publishDateInputModal.value,
-                    status: statusSelectModal.value,
-                    platforms: platformsInputModal.value.split(',').map(p => p.trim()).filter(p => p !== ''),
-                    type: document.getElementById('contentType').value,
-                    resources: document.getElementById('resources').value,
-                    outputLink: document.getElementById('outputLink').value,
-                    notes: document.getElementById('notes').value,
+                const id = document.getElementById('postId').value;
+                const postData = {
+                    topic: document.getElementById('contentTopic').value, publishDate: document.getElementById('publishDate').value,
+                    status: document.getElementById('status').value, platforms: document.getElementById('platforms').value.split(',').map(p=>p.trim()).filter(Boolean),
+                    type: document.getElementById('contentType').value, notes: document.getElementById('notes').value
                 };
                 try {
-                    if (id) {
-                        await setDoc(doc(db, `artifacts/${appId}/public/data/posts`, String(id)), newPostData, { merge: true });
-                    } else {
-                        await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), newPostData);
-                    }
+                    if (id) await setDoc(doc(db, `artifacts/${appId}/public/data/posts`, id), postData, { merge: true });
+                    else await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), postData);
                     closeModal();
-                } catch (e) { console.error("Error saving document: ", e); alert("Error saving post."); }
+                } catch (err) { console.error("Error saving post:", err); }
             }
-
+            
             function toggleDarkMode() {
-                document.documentElement.classList.toggle('dark');
-                localStorage.setItem('darkMode', document.documentElement.classList.contains('dark') ? 'enabled' : 'disabled');
+                const isDark = document.documentElement.classList.toggle('dark');
+                localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
                 renderAllContent();
             }
 
-            function showLoginModal() {
-                adminPasswordInput.value = '';
-                loginError.classList.add('hidden');
-                loginModal.classList.remove('hidden');
-                loginModal.classList.add('flex');
-            }
+            function showLoginModal() { loginModal.classList.remove('hidden'); loginModal.classList.add('flex'); }
+            function hideLoginModal() { loginModal.classList.add('hidden'); loginModal.classList.remove('flex'); }
 
-            function hideLoginModal() {
-                loginModal.classList.add('hidden');
-                loginModal.classList.remove('flex');
-            }
-
-            async function login() {
+            function login() {
                 if (adminPasswordInput.value === ADMIN_PASSWORD) {
-                    isAdminLoggedIn = true;
-                    localStorage.setItem('isAdminLoggedIn', 'true');
-                    hideLoginModal();
-                    renderAllContent();
-                } else {
-                    loginError.classList.remove('hidden');
-                }
+                    isAdminLoggedIn = true; localStorage.setItem('isAdminLoggedIn', 'true');
+                    hideLoginModal(); renderAllContent();
+                } else { loginError.classList.remove('hidden'); }
             }
 
-            function logout() {
-                isAdminLoggedIn = false;
-                localStorage.setItem('isAdminLoggedIn', 'false');
-                renderAllContent();
-            }
-
-            function updateAdminUI() {
-                const isAdmin = isAdminLoggedIn;
-                addPostBtn.disabled = !isAdmin;
-                setCustomTitleBtn.disabled = !isAdmin;
-                clearCustomTitleBtn.disabled = !isAdmin;
-                addPostBtn.classList.toggle('opacity-50', !isAdmin);
-                addPostBtn.classList.toggle('cursor-not-allowed', !isAdmin);
-                setCustomTitleBtn.classList.toggle('opacity-50', !isAdmin);
-                setCustomTitleBtn.classList.toggle('cursor-not-allowed', !isAdmin);
-                clearCustomTitleBtn.classList.toggle('opacity-50', !isAdmin);
-                clearCustomTitleBtn.classList.toggle('cursor-not-allowed', !isAdmin);
-                adminLoginBtn.classList.toggle('hidden', isAdmin);
-                adminLogoutBtn.classList.toggle('hidden', !isAdmin);
-                loggedInUserDisplay.textContent = isAdmin ? 'Logged in as Admin' : 'Not Logged In';
-            }
-
-            async function updateGlobalPreferences(newPrefs) {
-                try {
-                    await setDoc(doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings'), newPrefs, { merge: true });
-                } catch (e) { console.error("Error updating global preferences: ", e); }
-            }
-
+            function logout() { isAdminLoggedIn = false; localStorage.setItem('isAdminLoggedIn', 'false'); renderAllContent(); }
+            function updateAdminUI() { addPostBtn.disabled = !isAdminLoggedIn; addPostBtn.classList.toggle('opacity-50', !isAdminLoggedIn); addPostBtn.classList.toggle('cursor-not-allowed', !isAdminLoggedIn); adminLoginBtn.classList.toggle('hidden', isAdminLoggedIn); adminLogoutBtn.classList.toggle('hidden', !isAdminLoggedIn); loggedInUserDisplay.textContent = isAdminLoggedIn ? 'Logged in as Admin' : 'Not Logged In'; }
+            
             onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    currentUserId = user.uid;
-                    onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), (snapshot) => {
-                        posts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                        renderAllContent();
-                        populateFilters();
-                    }, (error) => console.error("Error listening to posts: ", error));
-                    onSnapshot(doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles'), (docSnapshot) => {
-                        customWeeklyTitles = docSnapshot.exists() ? docSnapshot.data() : {};
-                        renderAllContent();
-                    }, (error) => console.error("Error listening to custom titles: ", error));
-                    onSnapshot(doc(db, `artifacts/${appId}/public/data/globalPreferences`, 'settings'), (docSnapshot) => {
-                        if (docSnapshot.exists()) {
-                            globalPreferences = { ...globalPreferences, ...docSnapshot.data() };
-                        } else {
-                            updateGlobalPreferences(globalPreferences);
-                        }
-                        platformFilter.value = globalPreferences.platformFilter;
-                        statusFilter.value = globalPreferences.statusFilter;
-                        weekStartDayFilter.value = globalPreferences.weekStartDay;
-                        currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
-                        renderAllContent();
-                    }, (error) => console.error("Error listening to global preferences: ", error));
-                } else {
-                    try {
-                        await signInAnonymously(auth);
-                    } catch (error) { console.error("Error signing in anonymously: ", error); }
-                }
+                if (user) { currentUserId = user.uid; onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), snap => { posts = snap.docs.map(d => ({id:d.id, ...d.data()})); renderAllContent(); });
+                } else { try { await signInAnonymously(auth); } catch (e) { console.error(e); } }
             });
 
-            if (localStorage.getItem('darkMode') === 'enabled') {
-                document.documentElement.classList.add('dark');
-                darkModeToggle.checked = true;
-            }
-
-            platformFilter.addEventListener('change', (e) => updateGlobalPreferences({ platformFilter: e.target.value }));
-            statusFilter.addEventListener('change', (e) => updateGlobalPreferences({ statusFilter: e.target.value }));
+            if (localStorage.getItem('darkMode') === 'enabled') { document.documentElement.classList.add('dark'); darkModeToggle.checked = true; }
+            if (localStorage.getItem('isAdminLoggedIn') === 'true') { isAdminLoggedIn = true; }
+            
+            platformFilter.addEventListener('change', () => {globalPreferences.platformFilter = platformFilter.value; renderAllContent();});
+            statusFilter.addEventListener('change', () => {globalPreferences.statusFilter = statusFilter.value; renderAllContent();});
+            weekStartDayFilter.addEventListener('change', () => {currentWeekStartDate = getWeekStartDate(new Date(), weekStartDayFilter.value); renderAllContent();});
             darkModeToggle.addEventListener('change', toggleDarkMode);
-            weekStartDayFilter.addEventListener('change', (e) => updateGlobalPreferences({ weekStartDay: e.target.value }));
             addPostBtn.addEventListener('click', () => isAdminLoggedIn ? openModal() : showLoginModal());
-            cancelBtn.addEventListener('click', closeModal);
-            postForm.addEventListener('submit', handleFormSubmit);
-            modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+            cancelBtn.addEventListener('click', closeModal); postForm.addEventListener('submit', handleFormSubmit);
+            modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
             prevWeekBtn.addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7); renderAllContent(); });
             nextWeekBtn.addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() + 7); renderAllContent(); });
-            setCustomTitleBtn.addEventListener('click', async () => { if (!isAdminLoggedIn) { showLoginModal(); return; } const weekId = getCurrentWeekId(); try { await setDoc(doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles'), { [weekId]: customWeeklyTitleInput.value.trim() }, { merge: true }); } catch (e) { console.error("Error setting custom title: ", e); } });
-            clearCustomTitleBtn.addEventListener('click', async () => { if (!isAdminLoggedIn) { showLoginModal(); return; } const weekId = getCurrentWeekId(); try { const customTitlesDocRef = doc(db, `artifacts/${appId}/public/data/customWeeklyTitles`, 'titles'); const currentTitles = (await getDoc(customTitlesDocRef)).data() || {}; delete currentTitles[weekId]; await setDoc(customTitlesDocRef, currentTitles); } catch (e) { console.error("Error clearing custom title: ", e); } });
-            cancelDeleteBtn.addEventListener('click', hideDeleteConfirm);
-            confirmDeleteBtn.addEventListener('click', deletePost);
-            deleteConfirmModal.addEventListener('click', (e) => { if(e.target === deleteConfirmModal) hideDeleteConfirm(); });
-            adminLoginBtn.addEventListener('click', showLoginModal);
-            adminLogoutBtn.addEventListener('click', logout);
-            cancelLoginBtn.addEventListener('click', hideLoginModal);
-            submitLoginBtn.addEventListener('click', login);
-            adminPasswordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') login(); });
-            loginModal.addEventListener('click', (e) => { if(e.target === loginModal) hideLoginModal(); });
-
-            updateAdminUI();
+            cancelDeleteBtn.addEventListener('click', () => deleteConfirmModal.classList.add('hidden')); confirmDeleteBtn.addEventListener('click', async () => { if(postIdToDelete) await deleteDoc(doc(db,`artifacts/${appId}/public/data/posts`, postIdToDelete)); deleteConfirmModal.classList.add('hidden'); });
+            adminLoginBtn.addEventListener('click', showLoginModal); adminLogoutBtn.addEventListener('click', logout);
+            cancelLoginBtn.addEventListener('click', hideLoginModal); submitLoginBtn.addEventListener('click', login);
+            adminPasswordInput.addEventListener('keypress', e => {if (e.key==='Enter') login();});
+            updateAdminUI(); renderAllContent();
         });
     </script>
 </body>
