@@ -62,15 +62,17 @@
         .dark .day-column { background-color: #1e293b !important; }
         .analytics-card { background-color: #f0f9ff !important; }
         .dark .analytics-card { background-color: #1e293b !important; }
+        #postModal label { color: #1f2937; }
+        .dark #postModal label { color: #cbd5e1; }
 
-        /* MODIFIED: Added specific, high-contrast style for modal labels */
-        #postModal label {
-            color: #1f2937; /* Dark gray for high visibility in light mode */
+        /* MODIFIED: Added specific styling for the modal content box */
+        #modal-content {
+             background-color: #f8fafc; /* Tailwind's slate-50 */
         }
-        .dark #postModal label {
-            color: #cbd5e1; /* Keep labels light and clear in dark mode */
+        .dark #modal-content {
+            background-color: #1e293b; /* Re-apply original dark mode color */
         }
-
+        
         .western-font { font-family: 'Slackey', cursive, sans-serif; text-shadow: 2px 2px 3px rgba(0,0,0,0.4); }
         .status-tag { font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; }
         .platform-tag { display: inline-block; font-size: 10px; font-weight: 600; margin-right: 6px; padding: 2px 8px; border-radius: 9999px; }
@@ -153,7 +155,7 @@
     </div>
 
     <div id="postModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl p-6 w-full max-w-lg" id="modal-content">
+        <div class="rounded-lg shadow-2xl p-6 w-full max-w-lg" id="modal-content">
             <h2 id="modalTitle" class="text-2xl font-bold mb-6 text-brand-charcoal"></h2>
             <form id="postForm" class="space-y-4">
                 <input type="hidden" id="postId">
