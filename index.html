@@ -58,14 +58,18 @@
         .dark .bg-white { background-color: #1e293b; }
         .dark .bg-slate-100 { background-color: #162135; }
         .dark .bg-slate-200, .dark .bg-slate-300 { background-color: #334155; }
-        
-        /* MODIFIED: Forced light mode background color for day columns */
-        .day-column { background-color: #f0f9ff !important; /* sky-50 */ }
+        .day-column { background-color: #f0f9ff !important; }
         .dark .day-column { background-color: #1e293b !important; }
-
-        /* MODIFIED: Forced light mode background color for analytics boxes */
-        .analytics-card { background-color: #f0f9ff !important; /* sky-50 */ }
+        .analytics-card { background-color: #f0f9ff !important; }
         .dark .analytics-card { background-color: #1e293b !important; }
+
+        /* MODIFIED: Added specific, high-contrast style for modal labels */
+        #postModal label {
+            color: #1f2937; /* Dark gray for high visibility in light mode */
+        }
+        .dark #postModal label {
+            color: #cbd5e1; /* Keep labels light and clear in dark mode */
+        }
 
         .western-font { font-family: 'Slackey', cursive, sans-serif; text-shadow: 2px 2px 3px rgba(0,0,0,0.4); }
         .status-tag { font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; }
@@ -153,15 +157,15 @@
             <h2 id="modalTitle" class="text-2xl font-bold mb-6 text-brand-charcoal"></h2>
             <form id="postForm" class="space-y-4">
                 <input type="hidden" id="postId">
-                <div><label for="contentTopic" class="block text-sm font-medium text-brand-charcoal">Content Topic</label><input type="text" id="contentTopic" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
+                <div><label for="contentTopic">Content Topic</label><input type="text" id="contentTopic" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label for="publishDate" class="block text-sm font-medium text-brand-charcoal">Publish Date</label><input type="date" id="publishDate" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
-                    <div><label for="status" class="block text-sm font-medium text-brand-charcoal">Status</label><select id="status" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2"><option>To Do</option><option>In Progress</option><option>For Approval</option><option>Scheduled</option><option>Posted</option></select></div>
+                    <div><label for="publishDate">Publish Date</label><input type="date" id="publishDate" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
+                    <div><label for="status">Status</label><select id="status" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2"><option>To Do</option><option>In Progress</option><option>For Approval</option><option>Scheduled</option><option>Posted</option></select></div>
                 </div>
-                <div><label for="platforms" class="block text-sm font-medium text-brand-charcoal">Platforms (comma-separated)</label><input type="text" id="platforms" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
-                <div><label for="contentType" class="block text-sm font-medium text-brand-charcoal">Content Type</label><input type="text" id="contentType" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
-                <div><label for="resources" class="block text-sm font-medium text-brand-charcoal">Resources (link or notes)</label><input type="text" id="resources" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2"></div>
-                <div><label for="outputLink" class="block text-sm font-medium text-brand-charcoal">Output Link (URL for "View Post" button)</label><input type="url" id="outputLink" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2"></div>
+                <div><label for="platforms">Platforms (comma-separated)</label><input type="text" id="platforms" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
+                <div><label for="contentType">Content Type</label><input type="text" id="contentType" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2" required></div>
+                <div><label for="resources">Resources (link or notes)</label><input type="text" id="resources" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2"></div>
+                <div><label for="outputLink">Output Link (URL for "View Post" button)</label><input type="url" id="outputLink" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2"></div>
                 <div class="flex justify-end gap-4 pt-4"><button type="button" id="cancelBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="submit" id="saveBtn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Save Post</button></div>
             </form>
         </div>
