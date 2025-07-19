@@ -61,30 +61,26 @@
         .dark .bg-slate-100 { background-color: #162135; }
         .dark .bg-slate-200, .dark .bg-slate-300 { background-color: #334155; }
         
-        .day-column { background-color: #f0f9ff; }
-        .analytics-card { background-color: #f0f9ff; }
+        /* MODIFIED: Restored the larger drop shadow for light mode */
+        .day-column, .analytics-card {
+            background-color: #ffffff;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); /* shadow-lg */
+        }
+        .dark .day-column, .dark .analytics-card {
+            background-color: #1e293b;
+            box-shadow: none; /* No shadow in dark mode */
+        }
+
         #modal-content { background-color: #f8fafc; }
         #postModal label { color: #1f2937; }
         #postModal input, #postModal select, #postModal textarea { background-color: #ffffff; border: 1px solid #000000; }
-
-        /* MODIFIED: Added specific styles for filter dropdowns */
-        .filter-select {
-            background-color: #ffffff;
-            color: #111827;
-            border: 1px solid #d1d5db;
-        }
-        .dark .filter-select {
-            background-color: #e2e8f0; /* light gray background */
-            color: #111827; /* dark text */
-            border: 1px solid #475569;
-        }
+        .filter-select { background-color: #ffffff; color: #111827; border: 1px solid #d1d5db; }
 
         /* Dark Mode Overrides */
-        .dark .day-column { background-color: #1e293b; }
-        .dark .analytics-card { background-color: #1e293b; }
         .dark #postModal label { color: #cbd5e1; }
         .dark #modal-content { background-color: #1e293b; }
         .dark #postModal input, .dark #postModal select, .dark #postModal textarea { background-color: #334155; border: 1px solid #64748b; }
+        .dark .filter-select { background-color: #e2e8f0; color: #111827; border: 1px solid #475569; }
 
         .western-font { font-family: 'Slackey', cursive, sans-serif; text-shadow: 2px 2px 3px rgba(0,0,0,0.4); }
         .status-tag { font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; }
@@ -189,7 +185,6 @@
     <div id="loginModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-800 rounded-lg p-8 w-full max-w-sm"><h2 class="text-xl font-bold mb-4 text-brand-charcoal">Admin Login</h2><div class="mb-4"><label for="adminPassword" class="block text-sm font-medium text-brand-charcoal">Password</label><input type="password" id="adminPassword" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2"><p id="loginError" class="text-red-500 text-sm mt-2 hidden">Incorrect password.</p></div><div class="flex justify-end gap-4"><button type="button" id="cancelLoginBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="button" id="submitLoginBtn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Login</button></div></div></div>
 
     <script>
-        // All JavaScript functionality remains the same as the last working version.
         document.addEventListener('DOMContentLoaded', () => {
             const ADMIN_PASSWORD = "contentcowboy123";
             const { firebaseDb: db, firebaseAuth: auth, firebaseAppId: appId, firebaseDoc: doc, firebaseDeleteDoc: deleteDoc, firebaseOnSnapshot: onSnapshot, firebaseCollection: collection, firebaseAddDoc: addDoc, firebaseSetDoc: setDoc, firebaseSignInAnonymously: signInAnonymously, firebaseOnAuthStateChanged: onAuthStateChanged } = window;
@@ -241,9 +236,13 @@
                 ['currentWeekGrid', 'postedDailyGrid', 'allPostedContentContainer'].forEach(id => ui[id].innerHTML = '');
 
                 for (let i = 0; i < 7; i++) {
-                    const dayColHtml = `<div class="day-column rounded-lg p-2 space-y-2"><h3 class="font-bold text-base text-center text-brand-charcoal mb-2">${orderedDays[i]}</h3></div>`;
-                    ui.currentWeekGrid.innerHTML += dayColHtml;
-                    ui.postedDailyGrid.innerHTML += dayColHtml;
+                    const dayCol = document.createElement('div');
+                    dayCol.className = 'day-column rounded-lg p-2 space-y-2';
+                    dayCol.innerHTML = `<h3 class="font-bold text-base text-center text-brand-charcoal mb-2">${orderedDays[i]}</h3>`;
+                    ui.currentWeekGrid.appendChild(dayCol);
+                    
+                    const postedDayCol = dayCol.cloneNode(true);
+                    ui.postedDailyGrid.appendChild(postedDayCol);
                 }
                 
                 filteredWeeklyPosts.forEach(post => {
