@@ -53,6 +53,7 @@
         .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
         .dark .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #475569; }
         
+        /* Dark Mode Base */
         .dark { background-color: #0f172a; color: #e2e8f0; }
         .dark .text-slate-800 { color: #e2e8f0; }
         .dark .text-slate-600, .dark .text-slate-500 { color: #94a3b8; }
@@ -60,20 +61,27 @@
         .dark .bg-slate-100 { background-color: #162135; }
         .dark .bg-slate-200, .dark .bg-slate-300 { background-color: #334155; }
         
-        /* MODIFIED: Replaced the inset shadow border with a larger drop shadow */
-        .day-column, .analytics-card {
-            background-color: #ffffff;
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); /* shadow-lg */
-        }
-        .dark .day-column, .dark .analytics-card {
-            background-color: #1e293b;
-            box-shadow: none; /* No shadow in dark mode */
-        }
-
+        .day-column { background-color: #f0f9ff; }
+        .analytics-card { background-color: #f0f9ff; }
         #modal-content { background-color: #f8fafc; }
         #postModal label { color: #1f2937; }
         #postModal input, #postModal select, #postModal textarea { background-color: #ffffff; border: 1px solid #000000; }
 
+        /* MODIFIED: Added specific styles for filter dropdowns */
+        .filter-select {
+            background-color: #ffffff;
+            color: #111827;
+            border: 1px solid #d1d5db;
+        }
+        .dark .filter-select {
+            background-color: #e2e8f0; /* light gray background */
+            color: #111827; /* dark text */
+            border: 1px solid #475569;
+        }
+
+        /* Dark Mode Overrides */
+        .dark .day-column { background-color: #1e293b; }
+        .dark .analytics-card { background-color: #1e293b; }
         .dark #postModal label { color: #cbd5e1; }
         .dark #modal-content { background-color: #1e293b; }
         .dark #postModal input, .dark #postModal select, .dark #postModal textarea { background-color: #334155; border: 1px solid #64748b; }
@@ -103,15 +111,15 @@
                 <div class="col-span-2 sm:col-span-3 md:col-span-1"><h2 class="font-bold text-lg md:text-xl text-brand-charcoal">Filter Controls</h2></div>
                 <div>
                     <label for="platformFilter" class="block text-xs font-medium text-brand-charcoal">Platform</label>
-                    <select id="platformFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm"><option>All Platforms</option></select>
+                    <select id="platformFilter" class="filter-select mt-1 block w-full pl-3 pr-10 py-2 text-base rounded-md shadow-sm"><option>All Platforms</option></select>
                 </div>
                 <div>
                     <label for="statusFilter" class="block text-xs font-medium text-brand-charcoal">Status</label>
-                    <select id="statusFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm"><option>All Statuses</option><option>To Do</option><option>In Progress</option><option>For Approval</option><option>Scheduled</option><option>Posted</option></select>
+                    <select id="statusFilter" class="filter-select mt-1 block w-full pl-3 pr-10 py-2 text-base rounded-md shadow-sm"><option>All Statuses</option><option>To Do</option><option>In Progress</option><option>For Approval</option><option>Scheduled</option><option>Posted</option></select>
                 </div>
                 <div class="col-span-2 sm:col-span-1">
                     <label for="weekStartDayFilter" class="block text-xs font-medium text-brand-charcoal">Week Starts On</label>
-                    <select id="weekStartDayFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 rounded-md shadow-sm"><option value="Monday">Monday</option><option value="Sunday">Sunday</option></select>
+                    <select id="weekStartDayFilter" class="filter-select mt-1 block w-full pl-3 pr-10 py-2 text-base rounded-md shadow-sm"><option value="Monday">Monday</option><option value="Sunday">Sunday</option></select>
                 </div>
                 <div class="col-span-2 sm:col-span-2 md:col-span-1 text-right flex flex-row sm:flex-col items-center sm:items-end gap-2">
                     <button id="addPostBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Add Post</button>
@@ -182,7 +190,6 @@
 
     <script>
         // All JavaScript functionality remains the same as the last working version.
-        // No changes were made to the script below.
         document.addEventListener('DOMContentLoaded', () => {
             const ADMIN_PASSWORD = "contentcowboy123";
             const { firebaseDb: db, firebaseAuth: auth, firebaseAppId: appId, firebaseDoc: doc, firebaseDeleteDoc: deleteDoc, firebaseOnSnapshot: onSnapshot, firebaseCollection: collection, firebaseAddDoc: addDoc, firebaseSetDoc: setDoc, firebaseSignInAnonymously: signInAnonymously, firebaseOnAuthStateChanged: onAuthStateChanged } = window;
