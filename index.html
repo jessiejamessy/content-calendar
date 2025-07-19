@@ -52,6 +52,8 @@
         .dark .horizontal-scroll-container::-webkit-scrollbar-track { background: #1e293b; }
         .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
         .dark .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #475569; }
+        
+        /* Dark Mode Base */
         .dark { background-color: #0f172a; color: #e2e8f0; }
         .dark .text-slate-800 { color: #e2e8f0; }
         .dark .text-slate-600, .dark .text-slate-500 { color: #94a3b8; }
@@ -59,28 +61,24 @@
         .dark .bg-slate-100 { background-color: #162135; }
         .dark .bg-slate-200, .dark .bg-slate-300 { background-color: #334155; }
         
-        /* MODIFIED: Styles for light mode boxes */
-        .day-column { background-color: #f0f9ff; }
-        .analytics-card { background-color: #f0f9ff; }
-        #modal-content { background-color: #f8fafc; }
+        /* MODIFIED: Corrected styles for light mode boxes */
+        .day-column { background-color: #f0f9ff; } /* sky-50 */
+        .analytics-card { background-color: #f0f9ff; } /* sky-50 */
+        #modal-content { background-color: #f8fafc; } /* slate-50 */
         #postModal label { color: #1f2937; }
-        
-        /* MODIFIED: Style for light mode text boxes in the modal */
         #postModal input, #postModal select, #postModal textarea {
             background-color: #ffffff;
-            border-color: #000000;
+            border: 1px solid #000000;
         }
 
-        /* Dark mode overrides */
+        /* Dark Mode Overrides */
         .dark .day-column { background-color: #1e293b; }
         .dark .analytics-card { background-color: #1e293b; }
         .dark #postModal label { color: #cbd5e1; }
         .dark #modal-content { background-color: #1e293b; }
-
-        /* MODIFIED: Style for dark mode text boxes in the modal */
         .dark #postModal input, .dark #postModal select, .dark #postModal textarea {
-             background-color: #334155; /* slate-700 */
-             border-color: #64748b; /* slate-500 */
+             background-color: #334155;
+             border: 1px solid #64748b;
         }
 
         .western-font { font-family: 'Slackey', cursive, sans-serif; text-shadow: 2px 2px 3px rgba(0,0,0,0.4); }
