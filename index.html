@@ -42,7 +42,7 @@
         window.firebaseGetDocs = getDocs;
         window.firebaseSignInAnonymously = signInAnonymously;
         window.firebaseOnAuthStateChanged = onAuthStateChanged;
-    </script>
+    </style>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
         .chart-container { position: relative; width: 100%; max-width: 450px; margin: auto; }
@@ -186,13 +186,10 @@
 
             function createPostCard(post) {
                 const card = document.createElement('div');
-                card.className = 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm p-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow relative space-y-2';
-                card.dataset.postId = post.id; // Use a specific data attribute for the card itself
+                card.className = 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm p-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow relative space-y-2 cursor-pointer';
                 const platformsHtml = post.platforms.map(p => `<span class="platform-tag bg-${p.toLowerCase()}">${p}</span>`).join('');
                 const viewPostButton = (post.outputLink && post.status === 'Posted') ? `<a href="${post.outputLink}" target="_blank" rel="noopener noreferrer" class="text-xs bg-blue-500 text-white px-2 py-1 rounded-full hover:bg-blue-600">View Post</a>` : '';
-                
-                // FIXED: Added data-id attribute to the delete button itself for the delegated event listener
-                const deleteButtonHtml = isAdminLoggedIn ? `<button class="absolute top-1 right-1 text-slate-400 hover:text-red-500 delete-post-btn" data-id="${post.id}"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>` : '';
+                const deleteButtonHtml = isAdminLoggedIn ? `<button class="absolute top-1 right-1 text-slate-400 hover:text-red-500 delete-post-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>` : '';
 
                 card.innerHTML = `
                     <h4 class="font-bold text-sm text-brand-charcoal truncate">${post.topic}</h4>
@@ -204,6 +201,19 @@
                     </div>
                     ${deleteButtonHtml}
                 `;
+
+                // FIXED: Reverted to direct, more reliable event listeners attached on creation.
+                card.addEventListener('click', (e) => {
+                    if (e.target.closest('.delete-post-btn') || e.target.closest('a')) return;
+                    isAdminLoggedIn ? openModal(post) : showLoginModal();
+                });
+                
+                if (isAdminLoggedIn) {
+                    card.querySelector('.delete-post-btn')?.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showDeleteConfirm(post.id);
+                    });
+                }
                 return card;
             }
             
@@ -247,7 +257,7 @@
                 updateAdminUI();
             }
 
-            function renderCharts(data) { /* ... Chart logic ... */ }
+            function renderCharts(data) { const isDarkMode = document.documentElement.classList.contains('dark'); const colors = { text: isDarkMode ? '#94a3b8' : '#475569', border: isDarkMode ? '#475569' : '#e2e8f0' }; const statusCounts = {'To Do':0, 'In Progress':0, 'For Approval':0, 'Scheduled':0, 'Posted':0}; const platformCounts = {}; data.forEach(post => { if(statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++; post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1); }); if(platformChart) platformChart.destroy(); platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: colors.text } } } } }); if(statusChart) statusChart.destroy(); statusChart = new Chart('statusChart', { type: 'bar', data: { labels: Object.keys(statusCounts), datasets: [{ label: 'Posts', data: Object.values(statusCounts) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: {color: colors.text}, grid:{color:colors.border} }, y: { ticks: {color: colors.text}, grid:{color:colors.border} } } } }); }
 
             onAuthStateChanged(auth, user => {
                 if (user) {
@@ -277,53 +287,24 @@
                 ui.confirmDeleteBtn.addEventListener('click', deletePost);
                 ui.cancelDeleteBtn.addEventListener('click', hideDeleteConfirm);
                 [ui.postModal, ui.deleteConfirmModal, ui.loginModal].forEach(modal => modal.addEventListener('click', e => { if (e.target === modal) e.currentTarget.classList.add('hidden'); }));
-
-                // FIXED: Using a single delegated event listener for all clicks in the main container
-                ui.mainContainer.addEventListener('click', e => {
-                    // Handle delete button clicks
-                    const deleteButton = e.target.closest('.delete-post-btn');
-                    if (deleteButton && isAdminLoggedIn) {
-                        e.stopPropagation();
-                        showDeleteConfirm(deleteButton.dataset.id);
-                        return;
-                    }
-                    
-                    // Handle card clicks for editing
-                    const card = e.target.closest('[data-post-id]');
-                    if (card && !e.target.closest('a')) {
-                        const clickedPost = posts.find(p => p.id === card.dataset.postId);
-                        if(clickedPost) isAdminLoggedIn ? openModal(clickedPost) : showLoginModal();
-                    }
-                });
             }
             
-            function openModal(post = null) { /* ... */ }
+            function openModal(post = null) { ui.postForm.reset(); document.getElementById('postId').value = post?.id || ''; ui.modalTitle.textContent = post ? 'Edit Content' : 'Add New Content'; document.getElementById('contentTopic').value = post?.topic || ''; document.getElementById('publishDate').value = post?.publishDate || new Date().toISOString().split('T')[0]; document.getElementById('status').value = post?.status || 'To Do'; document.getElementById('platforms').value = post?.platforms?.join(', ') || ''; document.getElementById('contentType').value = post?.type || ''; document.getElementById('resources').value = post?.resources || ''; document.getElementById('outputLink').value = post?.outputLink || ''; ui.postModal.classList.remove('hidden'); ui.postModal.classList.add('flex'); }
             function closeModal() { ui.postModal.classList.add('hidden'); }
             function showDeleteConfirm(id) { postIdToDelete = id; ui.deleteConfirmModal.classList.remove('hidden'); ui.deleteConfirmModal.classList.add('flex'); }
             function hideDeleteConfirm() { ui.deleteConfirmModal.classList.add('hidden'); }
             async function deletePost() { if(!postIdToDelete) return; await deleteDoc(doc(db,`artifacts/${appId}/public/data/posts`, postIdToDelete)); hideDeleteConfirm(); }
-            function showLoginModal() { /* ... */ }
-            function hideLoginModal() { /* ... */ }
-            function login() { /* ... */ }
-            function logout() { /* ... */ }
-            function updateAdminUI() { /* ... */ }
-            async function handleFormSubmit(e) { /* ... */ }
+            function showLoginModal() { ui.adminPasswordInput.value = ''; ui.loginError.classList.add('hidden'); ui.loginModal.classList.remove('hidden'); ui.loginModal.classList.add('flex'); }
+            function hideLoginModal() { ui.loginModal.classList.add('hidden'); }
+            function login() { if (ui.adminPasswordInput.value === ADMIN_PASSWORD) { isAdminLoggedIn = true; localStorage.setItem('isAdminLoggedIn', 'true'); hideLoginModal(); renderAllContent(); } else { ui.loginError.classList.remove('hidden'); } }
+            function logout() { isAdminLoggedIn = false; localStorage.removeItem('isAdminLoggedIn'); renderAllContent(); }
+            function updateAdminUI() { ui.addPostBtn.disabled = !isAdminLoggedIn; ui.addPostBtn.classList.toggle('opacity-50', !isAdminLoggedIn); ui.adminLoginBtn.classList.toggle('hidden', isAdminLoggedIn); ui.adminLogoutBtn.classList.toggle('hidden', !isAdminLoggedIn); ui.loggedInUserDisplay.textContent = isAdminLoggedIn ? 'Logged in as Admin' : 'Not Logged In'; }
+            async function handleFormSubmit(e) { e.preventDefault(); const id = document.getElementById('postId').value; const postData = { topic: document.getElementById('contentTopic').value, publishDate: document.getElementById('publishDate').value, status: document.getElementById('status').value, platforms: document.getElementById('platforms').value.split(',').map(p=>p.trim()).filter(Boolean), type: document.getElementById('contentType').value, resources: document.getElementById('resources').value, outputLink: document.getElementById('outputLink').value }; try { if (id) await setDoc(doc(db, `artifacts/${appId}/public/data/posts`, id), postData, { merge: true }); else await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), postData); closeModal(); } catch (err) { console.error("Error saving post:", err); } }
 
-            // --- Initialization ---
             if (localStorage.getItem('darkMode') === 'enabled') { document.documentElement.classList.add('dark'); ui.darkModeToggle.checked = true; }
             if (localStorage.getItem('isAdminLoggedIn') === 'true') { isAdminLoggedIn = true; }
             setupEventListeners();
             updateAdminUI();
-            
-            // Re-bind full function bodies that were collapsed
-            renderCharts = function(data) { const isDarkMode = document.documentElement.classList.contains('dark'); const colors = { text: isDarkMode ? '#94a3b8' : '#475569', border: isDarkMode ? '#475569' : '#e2e8f0' }; const statusCounts = {'To Do':0, 'In Progress':0, 'For Approval':0, 'Scheduled':0, 'Posted':0}; const platformCounts = {}; data.forEach(post => { if(statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++; post.platforms.forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1); }); if(platformChart) platformChart.destroy(); platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: colors.text } } } } }); if(statusChart) statusChart.destroy(); statusChart = new Chart('statusChart', { type: 'bar', data: { labels: Object.keys(statusCounts), datasets: [{ label: 'Posts', data: Object.values(statusCounts) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: {color: colors.text}, grid:{color:colors.border} }, y: { ticks: {color: colors.text}, grid:{color:colors.border} } } } }); }
-            openModal = function(post = null) { ui.postForm.reset(); document.getElementById('postId').value = post?.id || ''; ui.modalTitle.textContent = post ? 'Edit Content' : 'Add New Content'; document.getElementById('contentTopic').value = post?.topic || ''; document.getElementById('publishDate').value = post?.publishDate || new Date().toISOString().split('T')[0]; document.getElementById('status').value = post?.status || 'To Do'; document.getElementById('platforms').value = post?.platforms?.join(', ') || ''; document.getElementById('contentType').value = post?.type || ''; document.getElementById('resources').value = post?.resources || ''; document.getElementById('outputLink').value = post?.outputLink || ''; ui.postModal.classList.remove('hidden'); ui.postModal.classList.add('flex'); }
-            showLoginModal = function() { ui.adminPasswordInput.value = ''; ui.loginError.classList.add('hidden'); ui.loginModal.classList.remove('hidden'); ui.loginModal.classList.add('flex'); }
-            hideLoginModal = function() { ui.loginModal.classList.add('hidden'); }
-            login = function() { if (ui.adminPasswordInput.value === ADMIN_PASSWORD) { isAdminLoggedIn = true; localStorage.setItem('isAdminLoggedIn', 'true'); hideLoginModal(); renderAllContent(); } else { ui.loginError.classList.remove('hidden'); } }
-            logout = function() { isAdminLoggedIn = false; localStorage.removeItem('isAdminLoggedIn'); renderAllContent(); }
-            updateAdminUI = function() { ui.addPostBtn.disabled = !isAdminLoggedIn; ui.addPostBtn.classList.toggle('opacity-50', !isAdminLoggedIn); ui.adminLoginBtn.classList.toggle('hidden', isAdminLoggedIn); ui.adminLogoutBtn.classList.toggle('hidden', !isAdminLoggedIn); ui.loggedInUserDisplay.textContent = isAdminLoggedIn ? 'Logged in as Admin' : 'Not Logged In'; }
-            handleFormSubmit = async function(e) { e.preventDefault(); const id = document.getElementById('postId').value; const postData = { topic: document.getElementById('contentTopic').value, publishDate: document.getElementById('publishDate').value, status: document.getElementById('status').value, platforms: document.getElementById('platforms').value.split(',').map(p=>p.trim()).filter(Boolean), type: document.getElementById('contentType').value, resources: document.getElementById('resources').value, outputLink: document.getElementById('outputLink').value }; try { if (id) await setDoc(doc(db, `artifacts/${appId}/public/data/posts`, id), postData, { merge: true }); else await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), postData); closeModal(); } catch (err) { console.error("Error saving post:", err); } }
         });
     </script>
 </body>
