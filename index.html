@@ -53,6 +53,7 @@
         .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
         .dark .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #475569; }
         
+        /* Dark Mode Base */
         .dark { background-color: #0f172a; color: #e2e8f0; }
         .dark .text-slate-800 { color: #e2e8f0; }
         .dark .text-slate-600, .dark .text-slate-500 { color: #94a3b8; }
@@ -73,6 +74,9 @@
         #postModal label { color: #1f2937; }
         #postModal input, #postModal select, #postModal textarea { background-color: #ffffff; border: 1px solid #000000; }
         .filter-select { background-color: #ffffff; color: #111827; border: 1px solid #d1d5db; }
+
+        /* MODIFIED: Made heading text brighter in dark mode */
+        .dark .text-brand-charcoal { color: #f1f5f9; }
 
         .dark #postModal label { color: #cbd5e1; }
         .dark #modal-content { background-color: #1e293b; }
@@ -183,7 +187,6 @@
 
     <script>
         // All JavaScript functionality remains the same as the last working version.
-        // No changes were made to the script below.
         document.addEventListener('DOMContentLoaded', () => {
             const ADMIN_PASSWORD = "contentcowboy123";
             const { firebaseDb: db, firebaseAuth: auth, firebaseAppId: appId, firebaseDoc: doc, firebaseDeleteDoc: deleteDoc, firebaseOnSnapshot: onSnapshot, firebaseCollection: collection, firebaseAddDoc: addDoc, firebaseSetDoc: setDoc, firebaseSignInAnonymously: signInAnonymously, firebaseOnAuthStateChanged: onAuthStateChanged } = window;
