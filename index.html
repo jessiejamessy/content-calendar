@@ -297,6 +297,9 @@
                         } else {
                             ui.appLogo.classList.add('hidden');
                         }
+                    }, (error) => {
+                        console.error("Could not load logo. This might be a permissions issue.", error);
+                        ui.appLogo.classList.add('hidden');
                     });
 
                     onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), snap => { posts = snap.docs.map(d => ({ id: d.id, ...d.data() })); populateFilters(); renderAllContent(); }, (error) => { console.error("Error fetching posts:", error); alert("Could not load posts."); }); 
