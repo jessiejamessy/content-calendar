@@ -182,6 +182,7 @@
                 <div><label for="platforms">Platforms (comma-separated)</label><input type="text" id="platforms" class="mt-1 block w-full border rounded-md p-2" required></div>
                 <div><label for="contentType">Content Type</label><input type="text" id="contentType" class="mt-1 block w-full border rounded-md p-2" required></div>
                 <div><label for="resources">Resources (link or notes)</label><input type="text" id="resources" class="mt-1 block w-full border rounded-md p-2"></div>
+                <div><label for="notes">Notes/Details</label><textarea id="notes" class="mt-1 block w-full border rounded-md p-2" rows="3"></textarea></div>
                 <div><label for="outputLink">Output Link (URL for "View Post" button)</label><input type="url" id="outputLink" class="mt-1 block w-full border rounded-md p-2"></div>
                 <div class="flex justify-end gap-4 pt-4"><button type="button" id="cancelBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="submit" id="saveBtn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Save Post</button></div>
             </form>
@@ -244,7 +245,22 @@
 
             onAuthStateChanged(auth, user => { if (user) { currentUserId = user.uid; ui.currentUserIdDisplay.textContent = `UID: ${user.uid.slice(0, 6)}...`; onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), snap => { posts = snap.docs.map(d => ({ id: d.id, ...d.data() })); populateFilters(); renderAllContent(); }, (error) => { console.error("Error fetching posts:", error); alert("Could not load posts."); }); onSnapshot(collection(db, `artifacts/${appId}/public/data/weekly_titles`), snap => { weeklyTitles = {}; snap.docs.forEach(d => { weeklyTitles[d.id] = d.data().title; }); renderAllContent(); }, (error) => console.error("Error fetching weekly titles:", error) ); } else { signInAnonymously(auth).catch(e => console.error("Anonymous sign-in failed", e)); } });
             
-            function openModal(post = null) { ui.postForm.reset(); document.getElementById('postId').value = post?.id || ''; ui.modalTitle.textContent = post ? 'Edit Content' : 'Add New Content'; document.getElementById('contentTopic').value = post?.topic || ''; document.getElementById('publishDate').value = post?.publishDate || new Date().toISOString().split('T')[0]; document.getElementById('status').value = post?.status || 'To Do'; document.getElementById('platforms').value = post?.platforms?.join(', ') || ''; document.getElementById('contentType').value = post?.type || ''; document.getElementById('resources').value = post?.resources || ''; document.getElementById('outputLink').value = post?.outputLink || ''; ui.postModal.classList.remove('hidden'); ui.postModal.classList.add('flex'); }
+            function openModal(post = null) {
+                ui.postForm.reset();
+                document.getElementById('postId').value = post?.id || '';
+                ui.modalTitle.textContent = post ? 'Edit Content' : 'Add New Content';
+                document.getElementById('contentTopic').value = post?.topic || '';
+                document.getElementById('publishDate').value = post?.publishDate || new Date().toISOString().split('T')[0];
+                document.getElementById('status').value = post?.status || 'To Do';
+                document.getElementById('platforms').value = post?.platforms?.join(', ') || '';
+                document.getElementById('contentType').value = post?.type || '';
+                document.getElementById('resources').value = post?.resources || '';
+                document.getElementById('notes').value = post?.notes || '';
+                document.getElementById('outputLink').value = post?.outputLink || '';
+                ui.postModal.classList.remove('hidden');
+                ui.postModal.classList.add('flex');
+            }
+
             function closeModal() { ui.postModal.classList.add('hidden'); }
             function showDeleteConfirm(id) { postIdToDelete = id; ui.deleteConfirmModal.classList.remove('hidden'); ui.deleteConfirmModal.classList.add('flex'); }
             function hideDeleteConfirm() { ui.deleteConfirmModal.classList.add('hidden'); }
@@ -254,7 +270,31 @@
             function login() { if (ui.adminPasswordInput.value === ADMIN_PASSWORD) { isAdminLoggedIn = true; localStorage.setItem('isAdminLoggedIn', 'true'); hideLoginModal(); renderAllContent(); } else { ui.loginError.classList.remove('hidden'); } }
             function logout() { isAdminLoggedIn = false; localStorage.removeItem('isAdminLoggedIn'); renderAllContent(); }
             function updateAdminUI() { ui.addPostBtn.disabled = !isAdminLoggedIn; ui.addPostBtn.classList.toggle('opacity-50', !isAdminLoggedIn); ui.adminLoginBtn.classList.toggle('hidden', isAdminLoggedIn); ui.adminLogoutBtn.classList.toggle('hidden', !isAdminLoggedIn); ui.loggedInUserDisplay.textContent = isAdminLoggedIn ? 'Logged in as Admin' : 'Not Logged In'; }
-            async function handleFormSubmit(e) { e.preventDefault(); const id = document.getElementById('postId').value; const postData = { topic: document.getElementById('contentTopic').value, publishDate: document.getElementById('publishDate').value, status: document.getElementById('status').value, platforms: document.getElementById('platforms').value.split(',').map(p=>p.trim()).filter(Boolean), type: document.getElementById('contentType').value, resources: document.getElementById('resources').value, outputLink: document.getElementById('outputLink').value }; try { if (id) await setDoc(doc(db, `artifacts/${appId}/public/data/posts`, id), postData, { merge: true }); else await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), postData); closeModal(); } catch (err) { console.error("Error saving post:", err); } }
+            
+            async function handleFormSubmit(e) {
+                e.preventDefault();
+                const id = document.getElementById('postId').value;
+                const postData = {
+                    topic: document.getElementById('contentTopic').value,
+                    publishDate: document.getElementById('publishDate').value,
+                    status: document.getElementById('status').value,
+                    platforms: document.getElementById('platforms').value.split(',').map(p=>p.trim()).filter(Boolean),
+                    type: document.getElementById('contentType').value,
+                    resources: document.getElementById('resources').value,
+                    notes: document.getElementById('notes').value,
+                    outputLink: document.getElementById('outputLink').value
+                };
+                try {
+                    if (id) {
+                        await setDoc(doc(db, `artifacts/${appId}/public/data/posts`, id), postData, { merge: true });
+                    } else {
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/posts`), postData);
+                    }
+                    closeModal();
+                } catch (err) {
+                    console.error("Error saving post:", err);
+                }
+            }
             
             async function handleEditWeeklyTitle() {
                 if (!isAdminLoggedIn) return;
