@@ -201,7 +201,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const ADMIN_PASSWORD = "contentcowboy123";
-            const { firebaseDb: db, firebaseAuth: auth, firebaseAppId: appId, firebaseDoc: doc, firebaseUpdateDoc: updateDoc, firebaseOnSnapshot: onSnapshot, collection: collection, firebaseAddDoc: addDoc, firebaseSetDoc: setDoc, firebaseSignInAnonymously: signInAnonymously, firebaseOnAuthStateChanged: onAuthStateChanged } = window;
+            const { firebaseDb: db, firebaseAuth: auth, firebaseAppId: appId, firebaseDoc: doc, firebaseDeleteDoc: deleteDoc, firebaseUpdateDoc: updateDoc, firebaseOnSnapshot: onSnapshot, collection: collection, firebaseAddDoc: addDoc, firebaseSetDoc: setDoc, firebaseSignInAnonymously: signInAnonymously, firebaseOnAuthStateChanged: onAuthStateChanged } = window;
             
             let allPosts = [], activePosts = [], deletedPosts = [], weeklyTitles = {}, currentUserId = null, isAdminLoggedIn = false;
             let globalPreferences = { platformFilter: 'All Platforms', statusFilter: 'All Statuses', weekStartDay: 'Monday' };
