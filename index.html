@@ -167,6 +167,11 @@
             <h2 class="text-xl md:text-3xl font-bold section-heading mb-4 text-center">All Posted Content (Archive)</h2>
             <div id="all-posted-content-container" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"></div>
         </section>
+
+        <section id="trash-section" class="mt-8 hidden">
+            <h2 class="text-xl md:text-3xl font-bold section-heading mb-4 text-center">Trash</h2>
+            <div id="trash-container" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+        </section>
     </div>
 
     <div id="postModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
@@ -188,7 +193,8 @@
             </form>
         </div>
     </div>
-    <div id="deleteConfirmModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-800 rounded-lg p-8 w-full max-w-sm"><h2 class="text-xl font-bold section-heading mb-4">Confirm Deletion</h2><p class="text-slate-600 mb-6">This action cannot be undone.</p><div class="flex justify-end gap-4"><button type="button" id="cancelDeleteBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="button" id="confirmDeleteBtn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg">Delete</button></div></div></div>
+    <div id="deleteConfirmModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-800 rounded-lg p-8 w-full max-w-sm"><h2 class="text-xl font-bold section-heading mb-4">Confirm Deletion</h2><p class="text-slate-600 mb-6">This will move the post to the trash.</p><div class="flex justify-end gap-4"><button type="button" id="cancelDeleteBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="button" id="confirmDeleteBtn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg">Delete</button></div></div></div>
+    <div id="permanentDeleteConfirmModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-800 rounded-lg p-8 w-full max-w-sm"><h2 class="text-xl font-bold section-heading mb-4 text-red-500">Permanently Delete?</h2><p class="text-slate-600 mb-6">This action is irreversible and cannot be undone.</p><div class="flex justify-end gap-4"><button type="button" id="cancelPermanentDeleteBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="button" id="confirmPermanentDeleteBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Delete Forever</button></div></div></div>
     <div id="loginModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-800 rounded-lg p-8 w-full max-w-sm"><h2 class="text-xl font-bold section-heading mb-4">Admin Login</h2><div class="mb-4"><label for="adminPassword" class="block text-sm font-medium">Password</label><input type="password" id="adminPassword" class="mt-1 block w-full border-slate-300 dark:border-slate-600 dark:bg-slate-700 rounded-md p-2"><p id="loginError" class="text-red-500 text-sm mt-2 hidden">Incorrect password.</p></div><div class="flex justify-end gap-4"><button type="button" id="cancelLoginBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="button" id="submitLoginBtn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Login</button></div></div></div>
 
     <script>
@@ -201,22 +207,23 @@
             let currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
             let platformChart, statusChart, postIdToDelete = null;
 
-            const ui = { platformFilter: document.getElementById('platformFilter'), statusFilter: document.getElementById('statusFilter'), weekStartDayFilter: document.getElementById('weekStartDayFilter'), darkModeToggle: document.getElementById('darkModeToggle'), currentWeekDisplay: document.getElementById('currentWeekDisplay'), weeklyTitleDisplay: document.getElementById('weeklyTitleDisplay'), editWeeklyTitleBtn: document.getElementById('editWeeklyTitleBtn'), currentWeekGrid: document.getElementById('current-week-grid'), postedDailyGrid: document.getElementById('posted-daily-grid'), allPostedContentContainer: document.getElementById('all-posted-content-container'), addPostBtn: document.getElementById('addPostBtn'), loggedInUserDisplay: document.getElementById('loggedInUserDisplay'), currentUserIdDisplay: document.getElementById('currentUserIdDisplay'), adminLoginBtn: document.getElementById('adminLoginBtn'), adminLogoutBtn: document.getElementById('adminLogoutBtn'), postModal: document.getElementById('postModal'), postForm: document.getElementById('postForm'), modalTitle: document.getElementById('modalTitle'), cancelBtn: document.getElementById('cancelBtn'), deleteConfirmModal: document.getElementById('deleteConfirmModal'), confirmDeleteBtn: document.getElementById('confirmDeleteBtn'), cancelDeleteBtn: document.getElementById('cancelDeleteBtn'), loginModal: document.getElementById('loginModal'), submitLoginBtn: document.getElementById('submitLoginBtn'), cancelLoginBtn: document.getElementById('cancelLoginBtn'), adminPasswordInput: document.getElementById('adminPassword'), loginError: document.getElementById('loginError'), prevWeekBtn: document.getElementById('prevWeekBtn'), nextWeekBtn: document.getElementById('nextWeekBtn'), statusChartTitle: document.getElementById('statusChartTitle') };
+            const ui = { platformFilter: document.getElementById('platformFilter'), statusFilter: document.getElementById('statusFilter'), weekStartDayFilter: document.getElementById('weekStartDayFilter'), darkModeToggle: document.getElementById('darkModeToggle'), currentWeekDisplay: document.getElementById('currentWeekDisplay'), weeklyTitleDisplay: document.getElementById('weeklyTitleDisplay'), editWeeklyTitleBtn: document.getElementById('editWeeklyTitleBtn'), currentWeekGrid: document.getElementById('current-week-grid'), postedDailyGrid: document.getElementById('posted-daily-grid'), allPostedContentContainer: document.getElementById('all-posted-content-container'), addPostBtn: document.getElementById('addPostBtn'), loggedInUserDisplay: document.getElementById('loggedInUserDisplay'), currentUserIdDisplay: document.getElementById('currentUserIdDisplay'), adminLoginBtn: document.getElementById('adminLoginBtn'), adminLogoutBtn: document.getElementById('adminLogoutBtn'), postModal: document.getElementById('postModal'), postForm: document.getElementById('postForm'), modalTitle: document.getElementById('modalTitle'), cancelBtn: document.getElementById('cancelBtn'), deleteConfirmModal: document.getElementById('deleteConfirmModal'), confirmDeleteBtn: document.getElementById('confirmDeleteBtn'), cancelDeleteBtn: document.getElementById('cancelDeleteBtn'), loginModal: document.getElementById('loginModal'), submitLoginBtn: document.getElementById('submitLoginBtn'), cancelLoginBtn: document.getElementById('cancelLoginBtn'), adminPasswordInput: document.getElementById('adminPassword'), loginError: document.getElementById('loginError'), prevWeekBtn: document.getElementById('prevWeekBtn'), nextWeekBtn: document.getElementById('nextWeekBtn'), statusChartTitle: document.getElementById('statusChartTitle'), trashSection: document.getElementById('trash-section'), trashContainer: document.getElementById('trash-container'), permanentDeleteConfirmModal: document.getElementById('permanentDeleteConfirmModal'), cancelPermanentDeleteBtn: document.getElementById('cancelPermanentDeleteBtn'), confirmPermanentDeleteBtn: document.getElementById('confirmPermanentDeleteBtn') };
             const platformColors = {'Facebook': '#1877F2', 'Instagram': '#E4405F', 'TikTok': '#000000', 'Blog': '#FF5722', 'LinkedIn': '#0A66C2', 'X': '#000000', 'Behance': '#0057FF', 'YouTube': '#FF0000', 'default': '#64748b'};
 
             function getWeekStartDate(d, startDayName) { d = new Date(d); d.setHours(0, 0, 0, 0); const day = d.getDay(); const diff = (startDayName === 'Monday') ? d.getDate() - day + (day === 0 ? -6 : 1) : d.getDate() - day; return new Date(new Date(d.setDate(diff)).setHours(0, 0, 0, 0)); }
             
-            function createPostCard(post) { const card = document.createElement('div'); card.className = 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm p-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow relative space-y-2 cursor-pointer'; const platforms = post.platforms || []; const status = post.status || 'Unknown'; const platformsHtml = platforms.map(p => `<span class="platform-tag bg-${p.toLowerCase()}">${p}</span>`).join(''); const viewPostButton = (post.outputLink && status === 'Posted') ? `<a href="${post.outputLink}" target="_blank" rel="noopener noreferrer" class="text-xs bg-blue-500 text-white px-2 py-1 rounded-full hover:bg-blue-600">View Post</a>` : ''; const deleteButtonHtml = isAdminLoggedIn ? `<button class="absolute top-1 right-1 text-slate-400 hover:text-red-500 delete-post-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>` : ''; card.innerHTML = `<h4 class="font-bold text-sm section-heading truncate">${post.topic || 'Untitled Post'}</h4><div class="flex flex-wrap gap-1">${platformsHtml}</div><p class="text-xs text-slate-600"><strong>Type:</strong> ${post.type || 'N/A'}</p><div class="flex justify-between items-center"><span class="status-tag bg-${status.replace(/\s+/g, '-').toLowerCase()}-200 text-${status.replace(/\s+/g, '-').toLowerCase()}-800">${status}</span>${viewPostButton}</div>${deleteButtonHtml}`; card.addEventListener('click', (e) => { if (e.target.closest('.delete-post-btn') || e.target.closest('a')) return; isAdminLoggedIn ? openModal(post) : showLoginModal(); }); if (isAdminLoggedIn) { card.querySelector('.delete-post-btn')?.addEventListener('click', (e) => { e.stopPropagation(); showDeleteConfirm(post.id); }); } return card; }
-            function populateFilters() { const allPlatforms = new Set(posts.flatMap(p => p.platforms || [])); const currentFilterValue = ui.platformFilter.value; ui.platformFilter.innerHTML = '<option>All Platforms</option>'; Array.from(allPlatforms).sort().forEach(platform => { const option = document.createElement('option'); option.value = platform; option.textContent = platform; ui.platformFilter.appendChild(option); }); ui.platformFilter.value = currentFilterValue; }
+            function createPostCard(post, isTrashView = false) { const card = document.createElement('div'); card.className = 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm p-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow relative space-y-2'; const platforms = post.platforms || []; const status = post.status || 'Unknown'; const platformsHtml = platforms.map(p => `<span class="platform-tag bg-${p.toLowerCase()}">${p}</span>`).join(''); const viewPostButton = (post.outputLink && status === 'Posted') ? `<a href="${post.outputLink}" target="_blank" rel="noopener noreferrer" class="text-xs bg-blue-500 text-white px-2 py-1 rounded-full hover:bg-blue-600">View Post</a>` : ''; const deleteButtonHtml = isAdminLoggedIn && !isTrashView ? `<button class="absolute top-1 right-1 text-slate-400 hover:text-red-500 delete-post-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 10002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>` : ''; const trashButtonsHtml = isTrashView ? `<div class="flex justify-end gap-2 mt-2"><button data-id="${post.id}" class="restore-post-btn text-xs bg-green-500 text-white px-2 py-1 rounded-full hover:bg-green-600">Restore</button><button data-id="${post.id}" class="permanent-delete-btn text-xs bg-red-600 text-white px-2 py-1 rounded-full hover:bg-red-700">Delete Forever</button></div>` : ''; card.innerHTML = `<h4 class="font-bold text-sm section-heading truncate">${post.topic || 'Untitled Post'}</h4><div class="flex flex-wrap gap-1">${platformsHtml}</div><p class="text-xs text-slate-600"><strong>Type:</strong> ${post.type || 'N/A'}</p><div class="flex justify-between items-center"><span class="status-tag bg-${status.replace(/\s+/g, '-').toLowerCase()}-200 text-${status.replace(/\s+/g, '-').toLowerCase()}-800">${status}</span>${viewPostButton}</div>${deleteButtonHtml}${trashButtonsHtml}`; if (!isTrashView) { card.addEventListener('click', (e) => { if (e.target.closest('.delete-post-btn') || e.target.closest('a')) return; isAdminLoggedIn ? openModal(post) : showLoginModal(); }); } if (isAdminLoggedIn && !isTrashView) { card.querySelector('.delete-post-btn')?.addEventListener('click', (e) => { e.stopPropagation(); showDeleteConfirm(post.id); }); } return card; }
+            function populateFilters() { const activePosts = posts.filter(p => !p.isTrashed); const allPlatforms = new Set(activePosts.flatMap(p => p.platforms || [])); const currentFilterValue = ui.platformFilter.value; ui.platformFilter.innerHTML = '<option>All Platforms</option>'; Array.from(allPlatforms).sort().forEach(platform => { const option = document.createElement('option'); option.value = platform; option.textContent = platform; ui.platformFilter.appendChild(option); }); ui.platformFilter.value = currentFilterValue; }
 
             function renderAllContent() {
                 const weekStart = currentWeekStartDate;
                 const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 7));
                 const weekId = weekStart.toISOString().split('T')[0];
-                const postsInDateRange = posts.filter(p => { if (!p.publishDate || typeof p.publishDate !== 'string' || !p.publishDate.includes('-')) return false; const parts = p.publishDate.split('-'); if (parts.length !== 3) return false; const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2])); return d instanceof Date && !isNaN(d) && d >= weekStart && d < weekEnd; });
+                const activePosts = posts.filter(p => !p.isTrashed);
+                const postsInDateRange = activePosts.filter(p => { if (!p.publishDate || typeof p.publishDate !== 'string' || !p.publishDate.includes('-')) return false; const parts = p.publishDate.split('-'); if (parts.length !== 3) return false; const d = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2])); return d instanceof Date && !isNaN(d) && d >= weekStart && d < weekEnd; });
                 const postsForCharts = (globalPreferences.platformFilter === 'All Platforms') ? postsInDateRange : postsInDateRange.filter(p => p.platforms && p.platforms.includes(globalPreferences.platformFilter));
                 const filteredWeeklyPosts = postsInDateRange.filter(p => (globalPreferences.platformFilter === 'All Platforms' || (p.platforms && p.platforms.includes(globalPreferences.platformFilter))) && (globalPreferences.statusFilter === 'All Statuses' || p.status === globalPreferences.statusFilter));
-                const allTimePosted = posts.filter(p => p.status === 'Posted' && (globalPreferences.platformFilter === 'All Platforms' || (p.platforms && p.platforms.includes(globalPreferences.platformFilter))));
+                const allTimePosted = activePosts.filter(p => p.status === 'Posted' && (globalPreferences.platformFilter === 'All Platforms' || (p.platforms && p.platforms.includes(globalPreferences.platformFilter))));
                 const orderedDays = (globalPreferences.weekStartDay === 'Monday') ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 
                 ui.currentWeekDisplay.textContent = `${weekStart.toLocaleDateString()} - ${new Date(new Date(weekStart).setDate(weekStart.getDate() + 6)).toLocaleDateString()}`;
@@ -225,7 +232,7 @@
                 ui.editWeeklyTitleBtn.textContent = currentTitle ? '[Edit Title]' : '[Add Title]';
                 ui.editWeeklyTitleBtn.classList.toggle('hidden', !isAdminLoggedIn);
                 
-                ['currentWeekGrid', 'postedDailyGrid', 'allPostedContentContainer'].forEach(id => ui[id].innerHTML = '');
+                ['currentWeekGrid', 'postedDailyGrid', 'allPostedContentContainer', 'trashContainer'].forEach(id => ui[id] && (ui[id].innerHTML = ''));
 
                 for (let i = 0; i < 7; i++) {
                     const dayCol = document.createElement('div');
@@ -237,6 +244,13 @@
                 
                 filteredWeeklyPosts.forEach(post => { const parts = post.publishDate.split('-'); const pDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2])); let dayIndex = pDate.getUTCDay(); if (globalPreferences.weekStartDay === 'Monday') dayIndex = (dayIndex === 0) ? 6 : dayIndex - 1; const grid = post.status === 'Posted' ? ui.postedDailyGrid : ui.currentWeekGrid; if (grid.children[dayIndex]) grid.children[dayIndex].appendChild(createPostCard(post)); });
                 allTimePosted.forEach(post => ui.allPostedContentContainer.appendChild(createPostCard(post)));
+                
+                ui.trashSection.classList.toggle('hidden', !isAdminLoggedIn);
+                if (isAdminLoggedIn) {
+                    const trashedPosts = posts.filter(p => p.isTrashed);
+                    trashedPosts.forEach(post => ui.trashContainer.appendChild(createPostCard(post, true)));
+                }
+
                 renderCharts(postsForCharts);
                 updateAdminUI();
             }
@@ -264,7 +278,11 @@
             function closeModal() { ui.postModal.classList.add('hidden'); }
             function showDeleteConfirm(id) { postIdToDelete = id; ui.deleteConfirmModal.classList.remove('hidden'); ui.deleteConfirmModal.classList.add('flex'); }
             function hideDeleteConfirm() { ui.deleteConfirmModal.classList.add('hidden'); }
-            async function deletePost() { if(!postIdToDelete) return; await deleteDoc(doc(db,`artifacts/${appId}/public/data/posts`, postIdToDelete)); hideDeleteConfirm(); }
+            async function deletePost() { if(!postIdToDelete) return; await setDoc(doc(db, `artifacts/${appId}/public/data/posts`, postIdToDelete), { isTrashed: true }, { merge: true }); hideDeleteConfirm(); }
+            function showPermanentDeleteConfirm(id) { postIdToDelete = id; ui.permanentDeleteConfirmModal.classList.remove('hidden'); ui.permanentDeleteConfirmModal.classList.add('flex'); }
+            function hidePermanentDeleteConfirm() { ui.permanentDeleteConfirmModal.classList.add('hidden'); }
+            async function permanentlyDeletePost() { if(!postIdToDelete) return; await deleteDoc(doc(db,`artifacts/${appId}/public/data/posts`, postIdToDelete)); hidePermanentDeleteConfirm(); }
+            async function restorePost(id) { if(!id) return; await setDoc(doc(db, `artifacts/${appId}/public/data/posts`, id), { isTrashed: false }, { merge: true }); }
             function showLoginModal() { ui.adminPasswordInput.value = ''; ui.loginError.classList.add('hidden'); ui.loginModal.classList.remove('hidden'); ui.loginModal.classList.add('flex'); }
             function hideLoginModal() { ui.loginModal.classList.add('hidden'); }
             function login() { if (ui.adminPasswordInput.value === ADMIN_PASSWORD) { isAdminLoggedIn = true; localStorage.setItem('isAdminLoggedIn', 'true'); hideLoginModal(); renderAllContent(); } else { ui.loginError.classList.remove('hidden'); } }
@@ -282,7 +300,8 @@
                     type: document.getElementById('contentType').value,
                     resources: document.getElementById('resources').value,
                     notes: document.getElementById('notes').value,
-                    outputLink: document.getElementById('outputLink').value
+                    outputLink: document.getElementById('outputLink').value,
+                    isTrashed: false // Ensure posts created/edited are not in trash
                 };
                 try {
                     if (id) {
@@ -329,7 +348,22 @@
                 ui.confirmDeleteBtn.addEventListener('click', deletePost);
                 ui.cancelDeleteBtn.addEventListener('click', hideDeleteConfirm);
                 ui.editWeeklyTitleBtn.addEventListener('click', handleEditWeeklyTitle);
-                [ui.postModal, ui.deleteConfirmModal, ui.loginModal].forEach(modal => modal.addEventListener('click', e => { if (e.target === modal) e.currentTarget.classList.add('hidden'); }));
+                
+                // New listeners for trash system
+                ui.confirmPermanentDeleteBtn.addEventListener('click', permanentlyDeletePost);
+                ui.cancelPermanentDeleteBtn.addEventListener('click', hidePermanentDeleteConfirm);
+                ui.trashContainer.addEventListener('click', e => {
+                    const restoreBtn = e.target.closest('.restore-post-btn');
+                    if (restoreBtn) {
+                        restorePost(restoreBtn.dataset.id);
+                    }
+                    const permanentDeleteBtn = e.target.closest('.permanent-delete-btn');
+                    if (permanentDeleteBtn) {
+                        showPermanentDeleteConfirm(permanentDeleteBtn.dataset.id);
+                    }
+                });
+
+                [ui.postModal, ui.deleteConfirmModal, ui.loginModal, ui.permanentDeleteConfirmModal].forEach(modal => modal.addEventListener('click', e => { if (e.target === modal) e.currentTarget.classList.add('hidden'); }));
             })();
 
             if (localStorage.getItem('darkMode') === 'enabled') { document.documentElement.classList.add('dark'); ui.darkModeToggle.checked = true; }
