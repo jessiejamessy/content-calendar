@@ -12,13 +12,12 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAqOoWBpthRQBI7Xgi-co3-Wrf8jX_nPnY",
             authDomain: "contentcalendar-10154.firebaseapp.com",
             projectId: "contentcalendar-10154",
-            storageBucket: "contentcalendar-10154.appspot.com",
+            storageBucket: "contentcalendar-10154.firebasestorage.app",
             messagingSenderId: "309580896666",
             appId: "1:309580896666:web:9d987624d2efd644960223"
         };
@@ -27,7 +26,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const storage = getStorage(app);
 
         window.firebaseDb = db;
         window.firebaseAuth = auth;
@@ -42,11 +40,6 @@
         window.firebaseGetDocs = getDocs;
         window.firebaseSignInAnonymously = signInAnonymously;
         window.firebaseOnAuthStateChanged = onAuthStateChanged;
-        // New Storage exports
-        window.firebaseStorage = storage;
-        window.firebaseStorageRef = ref;
-        window.firebaseUploadBytes = uploadBytes;
-        window.firebaseGetDownloadURL = getDownloadURL;
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
@@ -105,10 +98,7 @@
     <div id="main-container" class="container mx-auto p-4 md:p-6">
 
         <header class="text-center mb-6">
-            <div class="flex items-center justify-center mb-2">
-                <img id="appLogo" src="" alt="Content Cowboy Logo" class="h-10 sm:h-12 mr-4 hidden">
-                <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold western-font section-heading">Content Cowboy Interactive Calendar</h1>
-            </div>
+            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold western-font section-heading">Content Cowboy Interactive Calendar</h1>
             <p class="text-slate-600 mt-2 text-sm sm:text-base md:text-lg">A dynamic view of your weekly content schedule.</p>
         </header>
 
@@ -147,9 +137,7 @@
                 <div class="text-sm md:text-lg font-semibold text-center section-heading" id="currentWeekDisplay"></div>
                 <div class="mt-1">
                     <span id="weeklyTitleDisplay" class="text-lg md:text-xl font-bold section-heading"></span>
-                    <button id="editWeeklyTitleBtn" class="ml-2 text-xs text-blue-500 hover:underline hidden">[Edit Title]</button>
-                    <button id="editLogoBtn" class="ml-2 text-xs text-green-600 hover:underline hidden">[Edit Logo]</button>
-                    <input type="file" id="logoUploader" class="hidden" accept="image/*">
+                    <button id="editWeeklyTitleBtn" class="ml-2 text-xs text-blue-500 hover:underline hidden">[Edit]</button>
                 </div>
             </div>
             <button id="nextWeekBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-lg"><span class="hidden sm:inline">Next &rarr;</span><span class="sm:hidden">&rarr;</span></button>
@@ -212,21 +200,14 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const ADMIN_PASSWORD = "contentcowboy123";
-            const { 
-                firebaseDb: db, firebaseAuth: auth, firebaseAppId: appId, 
-                firebaseDoc: doc, firebaseDeleteDoc: deleteDoc, firebaseOnSnapshot: onSnapshot, 
-                firebaseCollection: collection, firebaseAddDoc: addDoc, firebaseSetDoc: setDoc, 
-                firebaseSignInAnonymously: signInAnonymously, firebaseOnAuthStateChanged: onAuthStateChanged,
-                firebaseStorage: storage, firebaseStorageRef: ref, firebaseUploadBytes: uploadBytes, 
-                firebaseGetDownloadURL: getDownloadURL
-            } = window;
+            const { firebaseDb: db, firebaseAuth: auth, firebaseAppId: appId, firebaseDoc: doc, firebaseDeleteDoc: deleteDoc, firebaseOnSnapshot: onSnapshot, firebaseCollection: collection, firebaseAddDoc: addDoc, firebaseSetDoc: setDoc, firebaseSignInAnonymously: signInAnonymously, firebaseOnAuthStateChanged: onAuthStateChanged } = window;
             
             let posts = [], weeklyTitles = {}, currentUserId = null, isAdminLoggedIn = false;
             let globalPreferences = { platformFilter: 'All Platforms', statusFilter: 'All Statuses', weekStartDay: 'Monday' };
             let currentWeekStartDate = getWeekStartDate(new Date(), globalPreferences.weekStartDay);
             let platformChart, statusChart, postIdToDelete = null;
 
-            const ui = { appLogo: document.getElementById('appLogo'), editLogoBtn: document.getElementById('editLogoBtn'), logoUploader: document.getElementById('logoUploader'), platformFilter: document.getElementById('platformFilter'), statusFilter: document.getElementById('statusFilter'), weekStartDayFilter: document.getElementById('weekStartDayFilter'), darkModeToggle: document.getElementById('darkModeToggle'), currentWeekDisplay: document.getElementById('currentWeekDisplay'), weeklyTitleDisplay: document.getElementById('weeklyTitleDisplay'), editWeeklyTitleBtn: document.getElementById('editWeeklyTitleBtn'), currentWeekGrid: document.getElementById('current-week-grid'), postedDailyGrid: document.getElementById('posted-daily-grid'), allPostedContentContainer: document.getElementById('all-posted-content-container'), addPostBtn: document.getElementById('addPostBtn'), loggedInUserDisplay: document.getElementById('loggedInUserDisplay'), currentUserIdDisplay: document.getElementById('currentUserIdDisplay'), adminLoginBtn: document.getElementById('adminLoginBtn'), adminLogoutBtn: document.getElementById('adminLogoutBtn'), postModal: document.getElementById('postModal'), postForm: document.getElementById('postForm'), modalTitle: document.getElementById('modalTitle'), cancelBtn: document.getElementById('cancelBtn'), deleteConfirmModal: document.getElementById('deleteConfirmModal'), confirmDeleteBtn: document.getElementById('confirmDeleteBtn'), cancelDeleteBtn: document.getElementById('cancelDeleteBtn'), loginModal: document.getElementById('loginModal'), submitLoginBtn: document.getElementById('submitLoginBtn'), cancelLoginBtn: document.getElementById('cancelLoginBtn'), adminPasswordInput: document.getElementById('adminPassword'), loginError: document.getElementById('loginError'), prevWeekBtn: document.getElementById('prevWeekBtn'), nextWeekBtn: document.getElementById('nextWeekBtn'), statusChartTitle: document.getElementById('statusChartTitle'), trashSection: document.getElementById('trash-section'), trashContainer: document.getElementById('trash-container'), permanentDeleteConfirmModal: document.getElementById('permanentDeleteConfirmModal'), cancelPermanentDeleteBtn: document.getElementById('cancelPermanentDeleteBtn'), confirmPermanentDeleteBtn: document.getElementById('confirmPermanentDeleteBtn') };
+            const ui = { platformFilter: document.getElementById('platformFilter'), statusFilter: document.getElementById('statusFilter'), weekStartDayFilter: document.getElementById('weekStartDayFilter'), darkModeToggle: document.getElementById('darkModeToggle'), currentWeekDisplay: document.getElementById('currentWeekDisplay'), weeklyTitleDisplay: document.getElementById('weeklyTitleDisplay'), editWeeklyTitleBtn: document.getElementById('editWeeklyTitleBtn'), currentWeekGrid: document.getElementById('current-week-grid'), postedDailyGrid: document.getElementById('posted-daily-grid'), allPostedContentContainer: document.getElementById('all-posted-content-container'), addPostBtn: document.getElementById('addPostBtn'), loggedInUserDisplay: document.getElementById('loggedInUserDisplay'), currentUserIdDisplay: document.getElementById('currentUserIdDisplay'), adminLoginBtn: document.getElementById('adminLoginBtn'), adminLogoutBtn: document.getElementById('adminLogoutBtn'), postModal: document.getElementById('postModal'), postForm: document.getElementById('postForm'), modalTitle: document.getElementById('modalTitle'), cancelBtn: document.getElementById('cancelBtn'), deleteConfirmModal: document.getElementById('deleteConfirmModal'), confirmDeleteBtn: document.getElementById('confirmDeleteBtn'), cancelDeleteBtn: document.getElementById('cancelDeleteBtn'), loginModal: document.getElementById('loginModal'), submitLoginBtn: document.getElementById('submitLoginBtn'), cancelLoginBtn: document.getElementById('cancelLoginBtn'), adminPasswordInput: document.getElementById('adminPassword'), loginError: document.getElementById('loginError'), prevWeekBtn: document.getElementById('prevWeekBtn'), nextWeekBtn: document.getElementById('nextWeekBtn'), statusChartTitle: document.getElementById('statusChartTitle'), trashSection: document.getElementById('trash-section'), trashContainer: document.getElementById('trash-container'), permanentDeleteConfirmModal: document.getElementById('permanentDeleteConfirmModal'), cancelPermanentDeleteBtn: document.getElementById('cancelPermanentDeleteBtn'), confirmPermanentDeleteBtn: document.getElementById('confirmPermanentDeleteBtn') };
             const platformColors = {'Facebook': '#1877F2', 'Instagram': '#E4405F', 'TikTok': '#000000', 'Blog': '#FF5722', 'LinkedIn': '#0A66C2', 'X': '#000000', 'Behance': '#0057FF', 'YouTube': '#FF0000', 'default': '#64748b'};
 
             function getWeekStartDate(d, startDayName) { d = new Date(d); d.setHours(0, 0, 0, 0); const day = d.getDay(); const diff = (startDayName === 'Monday') ? d.getDate() - day + (day === 0 ? -6 : 1) : d.getDate() - day; return new Date(new Date(d.setDate(diff)).setHours(0, 0, 0, 0)); }
@@ -259,6 +240,7 @@
                 const currentTitle = weeklyTitles[weekId];
                 ui.weeklyTitleDisplay.textContent = currentTitle || '';
                 ui.editWeeklyTitleBtn.textContent = currentTitle ? '[Edit Title]' : '[Add Title]';
+                ui.editWeeklyTitleBtn.classList.toggle('hidden', !isAdminLoggedIn);
                 
                 ['currentWeekGrid', 'postedDailyGrid', 'allPostedContentContainer', 'trashContainer'].forEach(id => ui[id] && (ui[id].innerHTML = ''));
 
@@ -285,29 +267,7 @@
 
             function renderCharts(data) { const isDarkMode = document.documentElement.classList.contains('dark'); const chartColors = { text: isDarkMode ? '#e5e7eb' : '#475569', border: isDarkMode ? '#475569' : '#e2e8f0' }; const selectedPlatform = globalPreferences.platformFilter; const platformCounts = {}; (selectedPlatform === 'All Platforms' ? data : data.filter(p => p.platforms.includes(selectedPlatform))).forEach(post => (post.platforms || []).forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1)); if(platformChart) platformChart.destroy(); platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts), backgroundColor: Object.keys(platformCounts).map(p => platformColors[p] || platformColors.default) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartColors.text } } } } }); const statuses = ['To Do', 'In Progress', 'For Approval', 'Scheduled', 'Posted']; if(statusChart) statusChart.destroy(); if (selectedPlatform === 'All Platforms') { ui.statusChartTitle.textContent = 'Content Status by Platform'; const platformsInData = [...new Set(data.flatMap(p => p.platforms || []))].sort(); const statusDatasets = platformsInData.map(platform => ({ label: platform, data: statuses.map(status => data.filter(post => post.status === status && (post.platforms || []).includes(platform)).length), backgroundColor: platformColors[platform] || platformColors.default })); statusChart = new Chart('statusChart', { type: 'bar', data: { labels: statuses, datasets: statusDatasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartColors.text } } }, scales: { x: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} }, y: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} } } } }); } else { ui.statusChartTitle.textContent = `Content Status for ${selectedPlatform}`; const statusCounts = {'To Do':0, 'In Progress':0, 'For Approval':0, 'Scheduled':0, 'Posted':0}; data.forEach(post => { if(statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++; }); const singleDataset = [{ label: selectedPlatform, data: Object.values(statusCounts), backgroundColor: platformColors[selectedPlatform] || platformColors.default }]; statusChart = new Chart('statusChart', { type: 'bar', data: { labels: statuses, datasets: singleDataset }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: {color: chartColors.text}, grid:{color:chartColors.border} }, y: { ticks: {color: chartColors.text}, grid:{color:chartColors.border} } } } }); } }
 
-            onAuthStateChanged(auth, user => { 
-                if (user) { 
-                    currentUserId = user.uid; 
-                    ui.currentUserIdDisplay.textContent = `UID: ${user.uid.slice(0, 6)}...`; 
-                    
-                    onSnapshot(doc(db, `artifacts/${appId}/public/config`, "logo"), (docSnap) => {
-                        if (docSnap.exists() && docSnap.data().url) {
-                            ui.appLogo.src = docSnap.data().url;
-                            ui.appLogo.classList.remove('hidden');
-                        } else {
-                            ui.appLogo.classList.add('hidden');
-                        }
-                    }, (error) => {
-                        console.error("Could not load logo. This might be a permissions issue.", error);
-                        ui.appLogo.classList.add('hidden');
-                    });
-
-                    onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), snap => { posts = snap.docs.map(d => ({ id: d.id, ...d.data() })); populateFilters(); renderAllContent(); }, (error) => { console.error("Error fetching posts:", error); alert("Could not load posts."); }); 
-                    onSnapshot(collection(db, `artifacts/${appId}/public/data/weekly_titles`), snap => { weeklyTitles = {}; snap.docs.forEach(d => { weeklyTitles[d.id] = d.data().title; }); renderAllContent(); }, (error) => console.error("Error fetching weekly titles:", error) ); 
-                } else { 
-                    signInAnonymously(auth).catch(e => console.error("Anonymous sign-in failed", e)); 
-                } 
-            });
+            onAuthStateChanged(auth, user => { if (user) { currentUserId = user.uid; ui.currentUserIdDisplay.textContent = `UID: ${user.uid.slice(0, 6)}...`; onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), snap => { posts = snap.docs.map(d => ({ id: d.id, ...d.data() })); populateFilters(); renderAllContent(); }, (error) => { console.error("Error fetching posts:", error); alert("Could not load posts."); }); onSnapshot(collection(db, `artifacts/${appId}/public/data/weekly_titles`), snap => { weeklyTitles = {}; snap.docs.forEach(d => { weeklyTitles[d.id] = d.data().title; }); renderAllContent(); }, (error) => console.error("Error fetching weekly titles:", error) ); } else { signInAnonymously(auth).catch(e => console.error("Anonymous sign-in failed", e)); } });
             
             function openModal(post = null) {
                 ui.postForm.reset();
@@ -337,42 +297,8 @@
             function hideLoginModal() { ui.loginModal.classList.add('hidden'); }
             function login() { if (ui.adminPasswordInput.value === ADMIN_PASSWORD) { isAdminLoggedIn = true; localStorage.setItem('isAdminLoggedIn', 'true'); hideLoginModal(); renderAllContent(); } else { ui.loginError.classList.remove('hidden'); } }
             function logout() { isAdminLoggedIn = false; localStorage.removeItem('isAdminLoggedIn'); renderAllContent(); }
+            function updateAdminUI() { ui.addPostBtn.disabled = !isAdminLoggedIn; ui.addPostBtn.classList.toggle('opacity-50', !isAdminLoggedIn); ui.adminLoginBtn.classList.toggle('hidden', isAdminLoggedIn); ui.adminLogoutBtn.classList.toggle('hidden', !isAdminLoggedIn); ui.loggedInUserDisplay.textContent = isAdminLoggedIn ? 'Logged in as Admin' : 'Not Logged In'; }
             
-            function updateAdminUI() { 
-                ui.addPostBtn.disabled = !isAdminLoggedIn; 
-                ui.addPostBtn.classList.toggle('opacity-50', !isAdminLoggedIn); 
-                ui.adminLoginBtn.classList.toggle('hidden', isAdminLoggedIn); 
-                ui.adminLogoutBtn.classList.toggle('hidden', !isAdminLoggedIn);
-                ui.editWeeklyTitleBtn.classList.toggle('hidden', !isAdminLoggedIn);
-                ui.editLogoBtn.classList.toggle('hidden', !isAdminLoggedIn);
-                ui.loggedInUserDisplay.textContent = isAdminLoggedIn ? 'Logged in as Admin' : 'Not Logged In'; 
-            }
-            
-            async function handleLogoUpload(e) {
-                const file = e.target.files[0];
-                if (!file || !file.type.startsWith('image/')) {
-                    alert('Please select a valid image file.');
-                    return;
-                }
-
-                const storageRef = ref(storage, `artifacts/${appId}/public/config/logo`);
-                
-                try {
-                    ui.editLogoBtn.textContent = "[Uploading...]";
-                    const snapshot = await uploadBytes(storageRef, file);
-                    const downloadURL = await getDownloadURL(snapshot.ref);
-                    await setDoc(doc(db, `artifacts/${appId}/public/config`, "logo"), { url: downloadURL });
-                    ui.editLogoBtn.textContent = "[Edit Logo]";
-                    alert('Logo updated successfully!');
-                } catch (error) {
-                    console.error("Error uploading logo:", error);
-                    alert('Error uploading logo. See console for details.');
-                    ui.editLogoBtn.textContent = "[Edit Logo]";
-                } finally {
-                    e.target.value = null; // Reset file input
-                }
-            }
-
             async function handleFormSubmit(e) {
                 e.preventDefault();
                 const id = document.getElementById('postId').value;
@@ -385,7 +311,7 @@
                     resources: document.getElementById('resources').value,
                     notes: document.getElementById('notes').value,
                     outputLink: document.getElementById('outputLink').value,
-                    isTrashed: false 
+                    isTrashed: false // Ensure posts created/edited are not in trash
                 };
                 try {
                     if (id) {
@@ -405,7 +331,7 @@
                 const currentTitle = weeklyTitles[weekId] || '';
                 const newTitle = window.prompt("Enter the title for this week:", currentTitle);
 
-                if (newTitle === null) return; 
+                if (newTitle === null) return; // User clicked cancel
 
                 const titleRef = doc(db, `artifacts/${appId}/public/data/weekly_titles`, weekId);
                 if (newTitle.trim() === '') {
@@ -433,11 +359,7 @@
                 ui.cancelDeleteBtn.addEventListener('click', hideDeleteConfirm);
                 ui.editWeeklyTitleBtn.addEventListener('click', handleEditWeeklyTitle);
                 
-                // Logo upload listeners
-                ui.editLogoBtn.addEventListener('click', () => ui.logoUploader.click());
-                ui.logoUploader.addEventListener('change', handleLogoUpload);
-
-                // Trash system listeners
+                // New listeners for trash system
                 ui.confirmPermanentDeleteBtn.addEventListener('click', permanentlyDeletePost);
                 ui.cancelPermanentDeleteBtn.addEventListener('click', hidePermanentDeleteConfirm);
                 ui.trashContainer.addEventListener('click', e => {
