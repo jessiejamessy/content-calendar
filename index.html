@@ -372,7 +372,6 @@
                 card.className = 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm p-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow relative space-y-2';
                 const platformsHtml = (post.platforms || []).map(p => `<span class="platform-tag bg-${p.toLowerCase()}">${p}</span>`).join('');
                 
-                // ✅ FIX: Handle both old string data and new array data for post.type
                 const postTypes = Array.isArray(post.type) ? post.type : (post.type ? [post.type] : []);
                 const typesHtml = postTypes.map(t => `<span class="type-tag">${t}</span>`).join('');
 
@@ -414,10 +413,13 @@
                 
                 // Populate standard fields
                 if (post) {
-                    Object.keys(post).forEach(key => {
-                        const el = document.getElementById(key);
-                        if (el && key !== 'type') el.value = post[key];
-                    });
+                    // ✅ FIX: Explicitly set contentTopic from post.topic
+                    document.getElementById('contentTopic').value = post.topic || '';
+                    document.getElementById('publishDate').value = post.publishDate || '';
+                    document.getElementById('status').value = post.status || 'To Do';
+                    document.getElementById('resources').value = post.resources || '';
+                    document.getElementById('notes').value = post.notes || '';
+                    document.getElementById('outputLink').value = post.outputLink || '';
                 } else {
                     document.getElementById('publishDate').value = formatDate(new Date());
                 }
