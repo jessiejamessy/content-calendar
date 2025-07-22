@@ -8,6 +8,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
         .chart-container { position: relative; width: 100%; max-width: 450px; margin: auto; }
@@ -71,7 +73,7 @@
         </header>
 
         <div class="bg-white p-3 sm:p-4 rounded-xl shadow-md mb-6 sticky top-4 z-10">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-3 gap-x-4">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-y-3 gap-x-4">
                 <div class="col-span-2 md:col-span-3 lg:col-span-1">
                     <h2 class="font-bold text-lg md:text-xl section-heading">Filter Controls</h2>
                 </div>
@@ -83,16 +85,19 @@
                     <label for="statusFilter" class="block text-xs font-medium text-slate-700 dark:text-slate-300">Status</label>
                     <select id="statusFilter" class="filter-select mt-1 block w-full pl-3 pr-10 py-1.5 text-sm rounded-md shadow-sm"><option>All Statuses</option><option>To Do</option><option>In Progress</option><option>For Approval</option><option>Scheduled</option><option>Posted</option></select>
                 </div>
-                <div class="col-span-2 sm:col-span-1">
+                <div>
                     <label for="weekStartDayFilter" class="block text-xs font-medium text-slate-700 dark:text-slate-300">Week Starts On</label>
                     <select id="weekStartDayFilter" class="filter-select mt-1 block w-full pl-3 pr-10 py-1.5 text-sm rounded-md shadow-sm"><option value="Monday">Monday</option><option value="Sunday">Sunday</option></select>
                 </div>
-                <div class="col-span-2 sm:col-span-2 lg:col-span-1 flex flex-row gap-2">
+                <div class="col-span-2 sm:col-span-1 flex flex-row gap-2">
                     <button id="addPostBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg shadow-md text-sm">Add Post</button>
                     <button id="adminLoginBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-lg shadow-md text-sm">Admin Login</button>
                     <button id="adminLogoutBtn" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-3 rounded-lg shadow-md text-sm hidden">Logout</button>
                 </div>
-                <div class="col-span-2 md:col-span-3 lg:col-span-5 border-t border-slate-200 dark:border-slate-700 pt-3 mt-2 flex justify-between items-center gap-4">
+                 <div class="col-span-2 sm:col-span-1">
+                    <button id="downloadPdfBtn" class="w-full h-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg shadow-md text-sm">Download PDF</button>
+                </div>
+                <div class="col-span-2 md:col-span-3 lg:col-span-6 border-t border-slate-200 dark:border-slate-700 pt-3 mt-2 flex justify-between items-center gap-4">
                     <label for="darkModeToggle" class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" id="darkModeToggle" class="sr-only"><div class="block bg-slate-600 w-14 h-8 rounded-full"></div><div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div></div><div class="ml-3 text-sm">Dark Mode</div></label>
                     <div id="loggedInUserDisplay" class="text-right text-xs font-medium text-slate-500 block">Not Logged In</div>
                 </div>
@@ -223,6 +228,7 @@
                 loggedInUserDisplay: document.getElementById('loggedInUserDisplay'),
                 adminLoginBtn: document.getElementById('adminLoginBtn'),
                 adminLogoutBtn: document.getElementById('adminLogoutBtn'),
+                downloadPdfBtn: document.getElementById('downloadPdfBtn'),
                 postModal: document.getElementById('postModal'),
                 postForm: document.getElementById('postForm'),
                 modalTitle: document.getElementById('modalTitle'),
@@ -355,7 +361,6 @@
                 }
                 filteredWeeklyPosts.forEach(post => { 
                     const pDate = new Date(post.publishDate + 'T00:00:00');
-                    // ✅ FIX: Use getDay() for local timezone instead of getUTCDay()
                     let dayIndex = pDate.getDay(); 
                     if (ui.weekStartDayFilter.value === 'Monday') dayIndex = (dayIndex === 0) ? 6 : dayIndex - 1;
                     const grid = post.status === 'Posted' ? ui.postedDailyGrid : ui.currentWeekGrid;
@@ -482,6 +487,45 @@
                 } catch(err) { console.error("Error saving title:", err); alert("Could not save title."); }
             }
 
+            function generateWeeklyReportPDF() {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                const activePosts = weeklyPosts.filter(p => !p.isTrashed).sort((a, b) => new Date(a.publishDate) - new Date(b.publishDate));
+                const weekId = formatDate(currentWeekStartDate);
+                const currentTitle = weeklyTitles[weekId] || 'No Title';
+                const weekDisplay = ui.currentWeekDisplay.textContent;
+
+                doc.setFontSize(18);
+                doc.text("Content Cowboy: Weekly Report", 14, 22);
+                doc.setFontSize(12);
+                doc.text(`Week of: ${weekDisplay}`, 14, 30);
+                doc.text(`Weekly Focus: ${currentTitle}`, 14, 36);
+
+                const tableColumn = ["Date", "Topic", "Platforms", "Type", "Status"];
+                const tableRows = [];
+
+                activePosts.forEach(post => {
+                    const postData = [
+                        post.publishDate,
+                        post.topic,
+                        (post.platforms || []).join(', '),
+                        (Array.isArray(post.type) ? post.type : [post.type]).join(', '),
+                        post.status
+                    ];
+                    tableRows.push(postData);
+                });
+
+                doc.autoTable({
+                    head: [tableColumn],
+                    body: tableRows,
+                    startY: 42,
+                });
+                
+                const date = formatDate(currentWeekStartDate);
+                doc.save(`Content_Cowboy_Report_${date}.pdf`);
+            }
+
             function closeModal() { ui.postModal.classList.add('hidden'); }
             function showDeleteConfirm(id) { postIdToDelete = id; ui.deleteConfirmModal.classList.remove('hidden'); ui.deleteConfirmModal.classList.add('flex'); }
             function hideDeleteConfirm() { ui.deleteConfirmModal.classList.add('hidden'); }
@@ -496,6 +540,7 @@
                 ui.weekStartDayFilter.addEventListener('change', e => { currentWeekStartDate = getWeekStartDate(currentWeekStartDate, e.target.value); fetchDataForCurrentWeek(); });
                 ui.darkModeToggle.addEventListener('change', () => { const isDark = document.documentElement.classList.toggle('dark'); localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled'); renderCharts(weeklyPosts.filter(p => !p.isTrashed)); });
                 ui.addPostBtn.addEventListener('click', () => openModal());
+                ui.downloadPdfBtn.addEventListener('click', generateWeeklyReportPDF);
                 ui.cancelBtn.addEventListener('click', closeModal);
                 ui.postForm.addEventListener('submit', handleFormSubmit);
                 ui.prevWeekBtn.addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7); fetchDataForCurrentWeek(); });
