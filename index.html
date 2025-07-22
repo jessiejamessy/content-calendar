@@ -175,10 +175,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, addDoc, query, where } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-        // --- 1. FIREBASE INITIALIZATION (Merged) ---
+        // --- 1. FIREBASE INITIALIZATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyAqOoWBpthRQBI7Xgi-co3-Wrf8jX_nPnY",
             authDomain: "contentcalendar-10154.firebaseapp.com",
@@ -191,9 +191,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const appId = firebaseConfig.projectId; // Define appId directly
+        const appId = firebaseConfig.projectId;
 
-        // --- 2. APPLICATION LOGIC (Merged) ---
+        // --- 2. APPLICATION LOGIC ---
         document.addEventListener('DOMContentLoaded', () => {
             
             // --- Configuration ---
@@ -259,20 +259,16 @@
 
             // --- Authentication ---
             onAuthStateChanged(auth, user => {
-                if (user) {
-                    // If a user is logged in, check their token for an admin claim
+                if (user && !user.isAnonymous) {
+                    // If a user is logged in (and not an anonymous one), check for an admin claim
                     user.getIdTokenResult().then(idTokenResult => {
-                        // The 'admin' property is the custom claim.
-                        // Set isAdminLoggedIn to true only if the claim exists and is true.
                         isAdminLoggedIn = !!idTokenResult.claims.admin;
                         updateAdminUI(user);
-                        fetchDataForCurrentWeek();
                     });
                 } else {
-                    // No user is signed in.
+                    // User is anonymous or logged out
                     isAdminLoggedIn = false;
-                    updateAdminUI(null);
-                    fetchDataForCurrentWeek();
+                    updateAdminUI(user); // Pass user to show anonymous status or nothing
                 }
             });
 
@@ -292,20 +288,22 @@
 
             async function handleLogout() {
                 await signOut(auth);
+                // After signing out, sign in anonymously to continue viewing data
+                signInAnonymously(auth).catch(err => console.error("Anonymous sign-in failed after logout:", err));
             }
 
             function updateAdminUI(user) {
                 ui.addPostBtn.disabled = !isAdminLoggedIn;
                 ui.addPostBtn.classList.toggle('opacity-50', !isAdminLoggedIn);
-                ui.adminLoginBtn.classList.toggle('hidden', !!user);
-                ui.adminLogoutBtn.classList.toggle('hidden', !user);
+                ui.adminLoginBtn.classList.toggle('hidden', user && !user.isAnonymous);
+                ui.adminLogoutBtn.classList.toggle('hidden', !user || user.isAnonymous);
                 ui.editWeeklyTitleBtn.classList.toggle('hidden', !isAdminLoggedIn);
                 ui.trashSection.classList.toggle('hidden', !isAdminLoggedIn);
 
-                if (user) {
+                if (user && !user.isAnonymous) {
                     ui.loggedInUserDisplay.textContent = `Logged in as: ${user.displayName || user.email}`;
                 } else {
-                    ui.loggedInUserDisplay.textContent = 'Not Logged In';
+                    ui.loggedInUserDisplay.textContent = 'Viewing as Guest';
                 }
                 renderAllContent(); 
             }
@@ -314,13 +312,6 @@
             function fetchDataForCurrentWeek() {
                 unsubscribePosts();
                 unsubscribeTitles();
-
-                if (!auth.currentUser) {
-                    weeklyPosts = [];
-                    weeklyTitles = {};
-                    renderAllContent();
-                    return;
-                }
 
                 const weekStart = currentWeekStartDate;
                 const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 7));
@@ -333,7 +324,7 @@
                     renderAllContent();
                 }, (error) => {
                      console.error("Error fetching weekly posts:", error);
-                     alert("Could not load post data. Check browser console for Firestore permission errors or missing indexes.");
+                     alert("Could not load post data. Check browser console for Firestore permission errors.");
                 });
                 
                 unsubscribeTitles = onSnapshot(titlesCollectionPath(), snap => {
@@ -423,9 +414,7 @@
                 document.getElementById('postId').value = post?.id || '';
                 ui.modalTitle.textContent = post ? 'Edit Content' : 'Add New Content';
                 
-                // Populate standard fields
                 if (post) {
-                    // ✅ FIX IS HERE: Explicitly set contentTopic value from post.topic
                     document.getElementById('contentTopic').value = post.topic || '';
                     document.getElementById('publishDate').value = post.publishDate || '';
                     document.getElementById('status').value = post.status || 'To Do';
@@ -436,14 +425,12 @@
                     document.getElementById('publishDate').value = formatDate(new Date());
                 }
                 
-                // Populate platform checkboxes
                 ui.platformsCheckboxContainer.innerHTML = '';
                 ALL_PLATFORMS.forEach(platform => {
                     const isChecked = post?.platforms?.includes(platform);
                     ui.platformsCheckboxContainer.innerHTML += `<label class="flex items-center space-x-2 text-sm"><input type="checkbox" name="platforms" value="${platform}" ${isChecked ? 'checked' : ''} class="rounded"><span>${platform}</span></label>`;
                 });
 
-                // Populate content type checkboxes
                 const postTypes = Array.isArray(post?.type) ? post.type : (post?.type ? [post.type] : []);
                 ui.contentTypeCheckboxContainer.innerHTML = '';
                 ALL_CONTENT_TYPES.forEach(type => {
@@ -539,6 +526,13 @@
                     document.documentElement.classList.add('dark');
                     ui.darkModeToggle.checked = true;
                 }
+                // Sign in anonymously for read access, then fetch data
+                signInAnonymously(auth).then(() => {
+                    fetchDataForCurrentWeek();
+                }).catch(err => {
+                    console.error("Anonymous sign-in failed:", err);
+                    alert("Could not connect to the database to view content.");
+                });
                 setupEventListeners();
             })();
         });
