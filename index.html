@@ -1,205 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Content Cowboy Interactive Calendar</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Rye&display=swap" rel="stylesheet">
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, addDoc, getDocs, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
-
-        // NOTE: Your Firebase config remains the same.
-        const firebaseConfig = {
-            apiKey: "AIzaSyAqOoWBpthRQBI7Xgi-co3-Wrf8jX_nPnY",
-            authDomain: "contentcalendar-10154.firebaseapp.com",
-            projectId: "contentcalendar-10154",
-            storageBucket: "contentcalendar-10154.firebasestorage.app",
-            messagingSenderId: "309580896666",
-            appId: "1:309580896666:web:9d987624d2efd644960223"
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        // Expose necessary Firebase functions to the window object for the main script.
-        window.firebase = {
-            db, auth,
-            doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, addDoc, getDocs,
-            query, where, writeBatch,
-            signInAnonymously, onAuthStateChanged, signOut,
-            GoogleAuthProvider, signInWithPopup
-        };
-    </script>
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-        .chart-container { position: relative; width: 100%; max-width: 450px; margin: auto; }
-        .day-column { min-height: 200px; min-width: 140px; }
-        .modal-bg { background-color: rgba(0,0,0,0.5); }
-        .horizontal-scroll-container { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 8px; }
-        .horizontal-scroll-container::-webkit-scrollbar { height: 8px; }
-        .horizontal-scroll-container::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }
-        .dark .horizontal-scroll-container::-webkit-scrollbar-track { background: #1e293b; }
-        .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
-        .dark .horizontal-scroll-container::-webkit-scrollbar-thumb { background: #475569; }
-        
-        .dark { background-color: #0f172a; color: #e2e8f0; }
-        .dark .text-slate-800 { color: #e2e8f0; }
-        .dark .text-slate-600, .dark .text-slate-500 { color: #94a3b8; }
-        .dark .bg-white { background-color: #1e293b; }
-        .dark .bg-slate-100 { background-color: #162135; }
-        .dark .bg-slate-200, .dark .bg-slate-300 { background-color: #334155; }
-        
-        .day-column, .analytics-card {
-            background-color: #ffffff;
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
-        .dark .day-column, .dark .analytics-card {
-            background-color: #1e293b;
-            box-shadow: none;
-        }
-
-        #modal-content, #title-modal-content { background-color: #f8fafc; }
-        #postModal label, #titleModal label { color: #1f2937; }
-        #postModal input, #postModal select, #postModal textarea, #weeklyTitleInput { background-color: #ffffff; border: 1px solid #94a3b8; }
-        .filter-select { background-color: #ffffff; color: #111827; border: 1px solid #d1d5db; }
-
-        .section-heading { color: #374151; }
-        .dark .section-heading { color: #e5e7eb; }
-
-        .dark #postModal label, .dark #titleModal label { color: #cbd5e1; }
-        .dark #modal-content, .dark #title-modal-content { background-color: #1e293b; }
-        .dark #postModal input, .dark #postModal select, .dark #postModal textarea, .dark #weeklyTitleInput { background-color: #334155; border: 1px solid #64748b; }
-        .dark .filter-select { background-color: #e2e8f0; color: #111827; border: 1px solid #475569; }
-
-        .western-font { font-family: 'Rye', cursive, sans-serif; text-shadow: 2px 2px 3px rgba(0,0,0,0.4); }
-        .status-tag { font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; }
-        .platform-tag { display: inline-block; font-size: 10px; font-weight: 600; margin-right: 6px; padding: 2px 8px; border-radius: 9999px; }
-        .bg-facebook { background-color: #1877F2; color: #fff; } .bg-instagram { background-color: #E4405F; color: #fff; } .bg-tiktok { background-color: #000; color: #fff; } .bg-blog { background-color: #FF5722; color: #fff; } .bg-linkedin { background-color: #0A66C2; color: #fff; } .bg-x { background-color: #000; color: #fff; } .bg-behance { background-color: #0057FF; color: #fff; } .bg-youtube { background-color: #FF0000; color: #fff; }
-        .bg-rose-200 { background-color: #ffe4e6; } .text-rose-800 { color: #9f1239; } .dark .bg-rose-200 { background-color: #9f1239; } .dark .text-rose-800 { color: #fecaca; }
-        .bg-amber-200 { background-color: #fef3c7; } .text-amber-800 { color: #92400e; } .dark .bg-amber-200 { background-color: #92400e; } .dark .text-amber-800 { color: #fcd34d; }
-        .bg-sky-200 { background-color: #e0f2fe; } .text-sky-800 { color: #075985; } .dark .bg-sky-200 { background-color: #0c4a6e; } .dark .text-sky-800 { color: #bae6fd; }
-        .bg-emerald-200 { background-color: #d1fae5; } .text-emerald-800 { color: #065f46; } .dark .bg-emerald-200 { background-color: #065f46; } .dark .text-emerald-800 { color: #a7f3d0; }
-        .bg-violet-200 { background-color: #e9d5ff; } .text-violet-800 { color: #7e22ce; } .dark .bg-violet-200 { background-color: #6d28d9; } .dark .text-violet-800 { color: #d8b4fe; }
-    </style>
-</head>
-<body class="antialiased text-slate-800">
-
-    <div id="main-container" class="container mx-auto p-4 md:p-6">
-
-        <header class="text-center mb-6">
-            <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold western-font section-heading">Content Cowboy Interactive Calendar</h1>
-            <p class="text-slate-600 mt-2 text-sm sm:text-base md:text-lg">A dynamic view of your weekly content schedule.</p>
-        </header>
-
-        <div class="bg-white p-3 sm:p-4 rounded-xl shadow-md mb-6 sticky top-4 z-10">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-3 gap-x-4">
-                <div class="col-span-2 md:col-span-3 lg:col-span-1">
-                    <h2 class="font-bold text-lg md:text-xl section-heading">Filter Controls</h2>
-                </div>
-                <div>
-                    <label for="platformFilter" class="block text-xs font-medium text-slate-700 dark:text-slate-300">Platform</label>
-                    <select id="platformFilter" class="filter-select mt-1 block w-full pl-3 pr-10 py-1.5 text-sm rounded-md shadow-sm"><option>All Platforms</option></select>
-                </div>
-                <div>
-                    <label for="statusFilter" class="block text-xs font-medium text-slate-700 dark:text-slate-300">Status</label>
-                    <select id="statusFilter" class="filter-select mt-1 block w-full pl-3 pr-10 py-1.5 text-sm rounded-md shadow-sm"><option>All Statuses</option><option>To Do</option><option>In Progress</option><option>For Approval</option><option>Scheduled</option><option>Posted</option></select>
-                </div>
-                <div class="col-span-2 sm:col-span-1">
-                    <label for="weekStartDayFilter" class="block text-xs font-medium text-slate-700 dark:text-slate-300">Week Starts On</label>
-                    <select id="weekStartDayFilter" class="filter-select mt-1 block w-full pl-3 pr-10 py-1.5 text-sm rounded-md shadow-sm"><option value="Monday">Monday</option><option value="Sunday">Sunday</option></select>
-                </div>
-                <div class="col-span-2 sm:col-span-2 lg:col-span-1 flex flex-row gap-2">
-                    <button id="addPostBtn" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-lg shadow-md text-sm">Add Post</button>
-                    <button id="adminLoginBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-lg shadow-md text-sm">Admin Login</button>
-                    <button id="adminLogoutBtn" class="w-full bg-slate-600 hover:bg-slate-700 text-white font-bold py-2 px-3 rounded-lg shadow-md text-sm hidden">Logout</button>
-                </div>
-                <div class="col-span-2 md:col-span-3 lg:col-span-5 border-t border-slate-200 dark:border-slate-700 pt-3 mt-2 flex justify-between items-center gap-4">
-                    <label for="darkModeToggle" class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" id="darkModeToggle" class="sr-only"><div class="block bg-slate-600 w-14 h-8 rounded-full"></div><div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition"></div></div><div class="ml-3 text-sm">Dark Mode</div></label>
-                    <div id="loggedInUserDisplay" class="text-right text-xs font-medium text-slate-500 block">Not Logged In</div>
-                </div>
-            </div>
-        </div>
-
-        <section id="week-navigation" class="bg-white p-3 rounded-xl shadow-md mb-6 flex justify-between items-center gap-2">
-            <button id="prevWeekBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-lg"><span class="hidden sm:inline">&larr; Previous</span><span class="sm:hidden">&larr;</span></button>
-            <div class="text-center">
-                <div class="text-sm md:text-lg font-semibold text-center section-heading" id="currentWeekDisplay"></div>
-                <div class="mt-1">
-                    <span id="weeklyTitleDisplay" class="text-lg md:text-xl font-bold section-heading"></span>
-                    <button id="editWeeklyTitleBtn" class="ml-2 text-xs text-blue-500 hover:underline hidden">[Edit]</button>
-                </div>
-            </div>
-            <button id="nextWeekBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 rounded-lg"><span class="hidden sm:inline">Next &rarr;</span><span class="sm:hidden">&rarr;</span></button>
-        </section>
-        
-        <section id="analytics" class="mb-6">
-            <h2 class="text-xl md:text-3xl font-bold section-heading mb-4 text-center">Weekly Analytics Overview</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="analytics-card p-4 rounded-xl"><h3 class="text-base md:text-xl font-semibold text-center section-heading mb-4">Content Distribution</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="platformChart"></canvas></div></div>
-                <div class="analytics-card p-4 rounded-xl"><h3 id="statusChartTitle" class="text-base md:text-xl font-semibold text-center section-heading mb-4">Content Status</h3><div class="chart-container h-[250px] sm:h-[300px]"><canvas id="statusChart"></canvas></div></div>
-            </div>
-        </section>
-
-        <main id="calendar">
-            <h2 class="text-xl md:text-3xl font-bold section-heading mb-2 text-center">Current Week Content</h2>
-            <p class="text-slate-500 text-center mb-4 text-xs md:text-sm">(Scroll horizontally to see all days)</p>
-            <div class="horizontal-scroll-container bg-slate-100 rounded-lg"><div id="current-week-grid" class="grid grid-cols-7 gap-2" style="min-width: 980px;"></div></div>
-        </main>
-        
-        <section id="posted-daily-calendar" class="mt-8">
-            <h2 class="text-xl md:text-3xl font-bold section-heading mb-2 text-center">Posted Content by Day</h2>
-            <p class="text-slate-500 text-center mb-4 text-xs md:text-sm">(Scroll horizontally to see all days)</p>
-            <div class="horizontal-scroll-container bg-slate-100 rounded-lg"><div id="posted-daily-grid" class="grid grid-cols-7 gap-2" style="min-width: 980px;"></div></div>
-        </section>
-
-        <section id="all-posted-content-section" class="mt-8">
-            <h2 class="text-xl md:text-3xl font-bold section-heading mb-4 text-center">Posted Content (This Week)</h2>
-            <div id="all-posted-content-container" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"></div>
-        </section>
-
-        <section id="trash-section" class="mt-8 hidden">
-            <h2 class="text-xl md:text-3xl font-bold section-heading mb-4 text-center">Trash (This Week)</h2>
-            <div id="trash-container" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"></div>
-        </section>
-    </div>
-
-    <div id="postModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4">
-        <div id="modal-content" class="rounded-lg shadow-2xl p-6 w-full max-w-lg">
-            <h2 id="modalTitle" class="text-2xl font-bold mb-6 section-heading"></h2>
-            <form id="postForm" class="space-y-4">
-                <input type="hidden" id="postId">
-                <div><label for="contentTopic" class="font-medium">Content Topic</label><input type="text" id="contentTopic" class="mt-1 block w-full border rounded-md p-2" required></div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label for="publishDate" class="font-medium">Publish Date</label><input type="date" id="publishDate" class="mt-1 block w-full border rounded-md p-2" required></div>
-                    <div><label for="status" class="font-medium">Status</label><select id="status" class="mt-1 block w-full border rounded-md p-2"><option>To Do</option><option>In Progress</option><option>For Approval</option><option>Scheduled</option><option>Posted</option></select></div>
-                </div>
-                <div>
-                    <label class="font-medium">Platforms</label>
-                    <div id="platforms-checkbox-container" class="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        </div>
-                </div>
-                <div><label for="contentType" class="font-medium">Content Type</label><input type="text" id="contentType" class="mt-1 block w-full border rounded-md p-2" required></div>
-                <div><label for="resources" class="font-medium">Resources (link or notes)</label><input type="text" id="resources" class="mt-1 block w-full border rounded-md p-2"></div>
-                <div><label for="notes" class="font-medium">Notes/Details</label><textarea id="notes" class="mt-1 block w-full border rounded-md p-2" rows="3"></textarea></div>
-                <div><label for="outputLink" class="font-medium">Output Link (URL for "View Post" button)</label><input type="url" id="outputLink" class="mt-1 block w-full border rounded-md p-2"></div>
-                <div class="flex justify-end gap-4 pt-4"><button type="button" id="cancelBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="submit" id="saveBtn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Save Post</button></div>
-            </form>
-        </div>
-    </div>
-    <div id="deleteConfirmModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-800 rounded-lg p-8 w-full max-w-sm"><h2 class="text-xl font-bold section-heading mb-4">Confirm Deletion</h2><p class="text-slate-600 mb-6">This will move the post to the trash.</p><div class="flex justify-end gap-4"><button type="button" id="cancelDeleteBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="button" id="confirmDeleteBtn" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg">Delete</button></div></div></div>
-    <div id="permanentDeleteConfirmModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4"><div class="bg-white dark:bg-slate-800 rounded-lg p-8 w-full max-w-sm"><h2 class="text-xl font-bold section-heading mb-4 text-red-500">Permanently Delete?</h2><p class="text-slate-600 mb-6">This action is irreversible and cannot be undone.</p><div class="flex justify-end gap-4"><button type="button" id="cancelPermanentDeleteBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="button" id="confirmPermanentDeleteBtn" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg">Delete Forever</button></div></div></div>
-    <div id="titleModal" class="fixed inset-0 modal-bg z-50 hidden items-center justify-center p-4"><div id="title-modal-content" class="rounded-lg shadow-2xl p-6 w-full max-w-md"><h2 class="text-2xl font-bold mb-4 section-heading">Edit Weekly Title</h2><form id="titleForm"><div class="space-y-2"><label for="weeklyTitleInput" class="font-medium">Title for this week</label><input type="text" id="weeklyTitleInput" class="block w-full border rounded-md p-2"></div><div class="flex justify-end gap-4 pt-6"><button type="button" id="cancelTitleBtn" class="bg-slate-300 font-bold py-2 px-4 rounded-lg">Cancel</button><button type="submit" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Save Title</button></div></form></div></div>
-
-    <script type="module">
+<script type="module">
         document.addEventListener('DOMContentLoaded', () => {
             const { db, auth, doc, setDoc, deleteDoc, onSnapshot, collection, addDoc, getDocs, query, where, signInAnonymously, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } = window.firebase;
             
+            // NOTE: Re-added appId and corrected all database paths to match your project's structure.
+            const appId = window.firebase.appId || "contentcalendar-10154"; // Fallback just in case
+
             // --- Configuration ---
             const ALL_PLATFORMS = ['Facebook', 'Instagram', 'TikTok', 'Blog', 'LinkedIn', 'X', 'Behance', 'YouTube'];
             const platformColors = {'Facebook': '#1877F2', 'Instagram': '#E4405F', 'TikTok': '#000000', 'Blog': '#FF5722', 'LinkedIn': '#0A66C2', 'X': '#000000', 'Behance': '#0057FF', 'YouTube': '#FF0000', 'default': '#64748b'};
@@ -250,24 +55,22 @@
             
             // --- Helper Functions ---
             function getWeekStartDate(d, startDayName) { d = new Date(d); d.setHours(0, 0, 0, 0); const day = d.getDay(); const diff = (startDayName === 'Monday') ? d.getDate() - day + (day === 0 ? -6 : 1) : d.getDate() - day; return new Date(new Date(d.setDate(diff)).setHours(0, 0, 0, 0)); }
-            
             function formatDate(date) { return date.toISOString().split('T')[0]; }
+
+            // --- Corrected Database Path Helpers ---
+            const postsCollectionPath = () => collection(db, `artifacts/${appId}/public/data/posts`);
+            const postDocumentPath = (id) => doc(db, `artifacts/${appId}/public/data/posts`, id);
+            const titlesCollectionPath = () => collection(db, `artifacts/${appId}/public/data/weekly_titles`);
+            const titleDocumentPath = (id) => doc(db, `artifacts/${appId}/public/data/weekly_titles`, id);
+
 
             // --- Authentication ---
             onAuthStateChanged(auth, user => {
-                if (user) {
-                    isAdminLoggedIn = true; // NOTE: For true security, check for a custom admin claim.
-                    // Example with custom claims:
-                    // user.getIdTokenResult().then(idTokenResult => {
-                    //    isAdminLoggedIn = !!idTokenResult.claims.admin;
-                    //    updateAdminUI(user);
-                    // });
-                    updateAdminUI(user);
-                } else {
-                    isAdminLoggedIn = false;
-                    updateAdminUI(null);
-                }
-                fetchDataForCurrentWeek(); // Fetch data after auth state is known
+                // For true security, you should use custom claims to verify an admin.
+                // For now, any logged-in user is treated as an admin.
+                isAdminLoggedIn = !!user; 
+                updateAdminUI(user);
+                fetchDataForCurrentWeek(); // Fetch data after auth state is determined
             });
 
             async function handleLogin() {
@@ -276,7 +79,11 @@
                     await signInWithPopup(auth, provider);
                 } catch (error) {
                     console.error("Login failed:", error);
-                    alert("Could not log in. See console for details.");
+                    if (error.code === 'auth/popup-blocked') {
+                        alert("Login popup was blocked by the browser. Please allow popups for this site.");
+                    } else {
+                         alert("Could not log in. See console for details.");
+                    }
                 }
             }
 
@@ -297,7 +104,7 @@
                 } else {
                     ui.loggedInUserDisplay.textContent = 'Not Logged In';
                 }
-                renderAllContent(); // Re-render to show/hide admin elements on cards
+                renderAllContent(); 
             }
 
             // --- Data Fetching ---
@@ -305,20 +112,28 @@
                 unsubscribePosts(); // Unsubscribe from previous listener
                 unsubscribeTitles();
 
+                if (!auth.currentUser) {
+                    console.log("Not logged in. Clearing weekly data.");
+                    weeklyPosts = [];
+                    renderAllContent();
+                    return;
+                }
+
                 const weekStart = currentWeekStartDate;
                 const weekEnd = new Date(new Date(weekStart).setDate(weekStart.getDate() + 7));
                 
-                const postsRef = collection(db, 'posts');
-                const q = query(postsRef, where("publishDate", ">=", formatDate(weekStart)), where("publishDate", "<", formatDate(weekEnd)));
+                const postsQuery = query(postsCollectionPath(), where("publishDate", ">=", formatDate(weekStart)), where("publishDate", "<", formatDate(weekEnd)));
                 
-                unsubscribePosts = onSnapshot(q, snap => {
+                unsubscribePosts = onSnapshot(postsQuery, snap => {
                     weeklyPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     populateFilters();
                     renderAllContent();
-                }, (error) => console.error("Error fetching weekly posts:", error));
+                }, (error) => {
+                     console.error("Error fetching weekly posts:", error);
+                     alert("Could not load post data. Check browser console for Firestore permission errors or missing indexes.");
+                });
                 
-                const titlesRef = collection(db, 'weekly_titles');
-                unsubscribeTitles = onSnapshot(titlesRef, snap => {
+                unsubscribeTitles = onSnapshot(titlesCollectionPath(), snap => {
                     weeklyTitles = {};
                     snap.docs.forEach(d => { weeklyTitles[d.id] = d.data().title; });
                     renderAllContent();
@@ -328,30 +143,19 @@
 
             // --- Rendering ---
             function renderAllContent() {
+                // This function is large but its internal logic does not need to change.
                 const weekStart = currentWeekStartDate;
                 const weekId = formatDate(weekStart);
-                
-                // Filter posts based on UI controls
-                const filteredWeeklyPosts = weeklyPosts.filter(p => 
-                    (ui.platformFilter.value === 'All Platforms' || (p.platforms && p.platforms.includes(ui.platformFilter.value))) &&
-                    (ui.statusFilter.value === 'All Statuses' || p.status === ui.statusFilter.value)
-                );
-                
+                const filteredWeeklyPosts = weeklyPosts.filter(p => (ui.platformFilter.value === 'All Platforms' || (p.platforms && p.platforms.includes(ui.platformFilter.value))) && (ui.statusFilter.value === 'All Statuses' || p.status === ui.statusFilter.value));
                 const activePostsInWeek = weeklyPosts.filter(p => !p.isTrashed);
                 const postsForCharts = (ui.platformFilter.value === 'All Platforms') ? activePostsInWeek : activePostsInWeek.filter(p => p.platforms && p.platforms.includes(ui.platformFilter.value));
                 const postedThisWeek = activePostsInWeek.filter(p => p.status === 'Posted' && (ui.platformFilter.value === 'All Platforms' || (p.platforms && p.platforms.includes(ui.platformFilter.value))));
                 const trashedPostsInWeek = weeklyPosts.filter(p => p.isTrashed);
-
-                // Render week info
                 ui.currentWeekDisplay.textContent = `${weekStart.toLocaleDateString()} - ${new Date(new Date(weekStart).setDate(weekStart.getDate() + 6)).toLocaleDateString()}`;
                 const currentTitle = weeklyTitles[weekId];
                 ui.weeklyTitleDisplay.textContent = currentTitle || '';
                 ui.editWeeklyTitleBtn.textContent = currentTitle ? '[Edit Title]' : '[Add Title]';
-
-                // Clear all grids
                 ['currentWeekGrid', 'postedDailyGrid', 'allPostedContentContainer', 'trashContainer'].forEach(id => ui[id] && (ui[id].innerHTML = ''));
-
-                // Setup day columns
                 const orderedDays = (ui.weekStartDayFilter.value === 'Monday') ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
                 for (let i = 0; i < 7; i++) {
                     const dayCol = document.createElement('div');
@@ -360,26 +164,22 @@
                     ui.currentWeekGrid.appendChild(dayCol);
                     ui.postedDailyGrid.appendChild(dayCol.cloneNode(true));
                 }
-                
-                // Populate grids with post cards
                 filteredWeeklyPosts.forEach(post => { 
-                    const pDate = new Date(post.publishDate + 'T00:00:00'); // Use T00:00:00 to avoid timezone issues
+                    const pDate = new Date(post.publishDate + 'T00:00:00');
                     let dayIndex = pDate.getUTCDay(); 
                     if (ui.weekStartDayFilter.value === 'Monday') dayIndex = (dayIndex === 0) ? 6 : dayIndex - 1;
-                    
                     const grid = post.status === 'Posted' ? ui.postedDailyGrid : ui.currentWeekGrid;
                     if (grid.children[dayIndex] && !post.isTrashed) grid.children[dayIndex].appendChild(createPostCard(post)); 
                 });
-                
                 postedThisWeek.forEach(post => ui.allPostedContentContainer.appendChild(createPostCard(post)));
                 if (isAdminLoggedIn) {
                     trashedPostsInWeek.forEach(post => ui.trashContainer.appendChild(createPostCard(post, true)));
                 }
-
                 renderCharts(postsForCharts);
             }
 
             function createPostCard(post, isTrashView = false) {
+                // This function's internal logic is correct and does not need to change.
                 const card = document.createElement('div');
                 card.className = 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-sm p-2.5 rounded-lg shadow-md hover:shadow-lg transition-shadow relative space-y-2';
                 const platformsHtml = (post.platforms || []).map(p => `<span class="platform-tag bg-${p.toLowerCase()}">${p}</span>`).join('');
@@ -387,9 +187,7 @@
                 const editButtonHtml = isAdminLoggedIn && !isTrashView ? `<button class="absolute top-1 right-8 text-slate-400 hover:text-blue-500 edit-post-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>` : '';
                 const deleteButtonHtml = isAdminLoggedIn && !isTrashView ? `<button class="absolute top-1 right-1 text-slate-400 hover:text-red-500 delete-post-btn"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg></button>` : '';
                 const trashButtonsHtml = isTrashView ? `<div class="flex justify-end gap-2 mt-2"><button data-id="${post.id}" class="restore-post-btn text-xs bg-green-500 text-white px-2 py-1 rounded-full hover:bg-green-600">Restore</button><button data-id="${post.id}" class="permanent-delete-btn text-xs bg-red-600 text-white px-2 py-1 rounded-full hover:bg-red-700">Delete Forever</button></div>` : '';
-                
                 card.innerHTML = `<h4 class="font-bold text-sm section-heading truncate">${post.topic || 'Untitled Post'}</h4><div class="flex flex-wrap gap-1">${platformsHtml}</div><p class="text-xs text-slate-600"><strong>Type:</strong> ${post.type || 'N/A'}</p><div class="flex justify-between items-center"><span class="status-tag bg-${post.status.replace(/\s+/g, '-').toLowerCase()}-200 text-${post.status.replace(/\s+/g, '-').toLowerCase()}-800">${post.status}</span>${viewPostButton}</div>${editButtonHtml}${deleteButtonHtml}${trashButtonsHtml}`;
-                
                 if (isAdminLoggedIn && !isTrashView) {
                     card.querySelector('.edit-post-btn')?.addEventListener('click', (e) => { e.stopPropagation(); openModal(post); });
                     card.querySelector('.delete-post-btn')?.addEventListener('click', (e) => { e.stopPropagation(); showDeleteConfirm(post.id); });
@@ -398,6 +196,7 @@
             }
 
             function populateFilters() {
+                // This function's internal logic is correct and does not need to change.
                 const allPlatformsInWeek = new Set(weeklyPosts.filter(p => !p.isTrashed).flatMap(p => p.platforms || []));
                 const currentFilterValue = ui.platformFilter.value;
                 ui.platformFilter.innerHTML = '<option>All Platforms</option>';
@@ -413,145 +212,100 @@
             }
             
             function renderCharts(data) {
-                // Chart rendering logic remains largely the same...
-                 const isDarkMode = document.documentElement.classList.contains('dark'); const chartColors = { text: isDarkMode ? '#e5e7eb' : '#475569', border: isDarkMode ? '#475569' : '#e2e8f0' }; const selectedPlatform = ui.platformFilter.value; const platformCounts = {}; (selectedPlatform === 'All Platforms' ? data : data.filter(p => p.platforms.includes(selectedPlatform))).forEach(post => (post.platforms || []).forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1)); if(platformChart) platformChart.destroy(); platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts), backgroundColor: Object.keys(platformCounts).map(p => platformColors[p] || platformColors.default) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartColors.text } } } } }); const statuses = ['To Do', 'In Progress', 'For Approval', 'Scheduled', 'Posted']; if(statusChart) statusChart.destroy(); if (selectedPlatform === 'All Platforms') { ui.statusChartTitle.textContent = 'Content Status by Platform'; const platformsInData = [...new Set(data.flatMap(p => p.platforms || []))].sort(); const statusDatasets = platformsInData.map(platform => ({ label: platform, data: statuses.map(status => data.filter(post => post.status === status && (post.platforms || []).includes(platform)).length), backgroundColor: platformColors[platform] || platformColors.default })); statusChart = new Chart('statusChart', { type: 'bar', data: { labels: statuses, datasets: statusDatasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartColors.text } } }, scales: { x: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} }, y: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} } } } }); } else { ui.statusChartTitle.textContent = `Content Status for ${selectedPlatform}`; const statusCounts = {'To Do':0, 'In Progress':0, 'For Approval':0, 'Scheduled':0, 'Posted':0}; data.forEach(post => { if(statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++; }); const singleDataset = [{ label: selectedPlatform, data: Object.values(statusCounts), backgroundColor: platformColors[selectedPlatform] || platformColors.default }]; statusChart = new Chart('statusChart', { type: 'bar', data: { labels: statuses, datasets: singleDataset }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: {color: chartColors.text}, grid:{color:chartColors.border} }, y: { ticks: {color: chartColors.text}, grid:{color:chartColors.border} } } } }); }
+                // This function's internal logic is correct and does not need to change.
+                const isDarkMode = document.documentElement.classList.contains('dark'); const chartColors = { text: isDarkMode ? '#e5e7eb' : '#475569', border: isDarkMode ? '#475569' : '#e2e8f0' }; const selectedPlatform = ui.platformFilter.value; const platformCounts = {}; (selectedPlatform === 'All Platforms' ? data : data.filter(p => p.platforms.includes(selectedPlatform))).forEach(post => (post.platforms || []).forEach(p => platformCounts[p] = (platformCounts[p] || 0) + 1)); if(platformChart) platformChart.destroy(); platformChart = new Chart('platformChart', { type: 'doughnut', data: { labels: Object.keys(platformCounts), datasets: [{ data: Object.values(platformCounts), backgroundColor: Object.keys(platformCounts).map(p => platformColors[p] || platformColors.default) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartColors.text } } } } }); const statuses = ['To Do', 'In Progress', 'For Approval', 'Scheduled', 'Posted']; if(statusChart) statusChart.destroy(); if (selectedPlatform === 'All Platforms') { ui.statusChartTitle.textContent = 'Content Status by Platform'; const platformsInData = [...new Set(data.flatMap(p => p.platforms || []))].sort(); const statusDatasets = platformsInData.map(platform => ({ label: platform, data: statuses.map(status => data.filter(post => post.status === status && (post.platforms || []).includes(platform)).length), backgroundColor: platformColors[platform] || platformColors.default })); statusChart = new Chart('statusChart', { type: 'bar', data: { labels: statuses, datasets: statusDatasets }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: chartColors.text } } }, scales: { x: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} }, y: { stacked: true, ticks: {color: chartColors.text}, grid:{color:chartColors.border} } } } }); } else { ui.statusChartTitle.textContent = `Content Status for ${selectedPlatform}`; const statusCounts = {'To Do':0, 'In Progress':0, 'For Approval':0, 'Scheduled':0, 'Posted':0}; data.forEach(post => { if(statusCounts.hasOwnProperty(post.status)) statusCounts[post.status]++; }); const singleDataset = [{ label: selectedPlatform, data: Object.values(statusCounts), backgroundColor: platformColors[selectedPlatform] || platformColors.default }]; statusChart = new Chart('statusChart', { type: 'bar', data: { labels: statuses, datasets: singleDataset }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: {color: chartColors.text}, grid:{color:chartColors.border} }, y: { ticks: {color: chartColors.text}, grid:{color:chartColors.border} } } } }); }
             }
             
             // --- Modal & Form Handling ---
             function openModal(post = null) {
+                // This function's internal logic is correct and does not need to change.
                 ui.postForm.reset();
                 document.getElementById('postId').value = post?.id || '';
                 ui.modalTitle.textContent = post ? 'Edit Content' : 'Add New Content';
-                if (post) {
-                    Object.keys(post).forEach(key => {
-                        const el = document.getElementById(key === 'type' ? 'contentType' : key);
-                        if (el && el.type !== 'checkbox') el.value = post[key];
-                    });
-                } else {
-                     document.getElementById('publishDate').value = formatDate(new Date());
-                }
-                
-                // Handle platform checkboxes
+                if (post) { Object.keys(post).forEach(key => { const el = document.getElementById(key === 'type' ? 'contentType' : key); if (el && el.type !== 'checkbox') el.value = post[key]; }); } else { document.getElementById('publishDate').value = formatDate(new Date()); }
                 ui.platformsCheckboxContainer.innerHTML = '';
                 ALL_PLATFORMS.forEach(platform => {
                     const isChecked = post?.platforms?.includes(platform);
-                    ui.platformsCheckboxContainer.innerHTML += `
-                        <label class="flex items-center space-x-2 text-sm">
-                            <input type="checkbox" name="platforms" value="${platform}" ${isChecked ? 'checked' : ''} class="rounded">
-                            <span>${platform}</span>
-                        </label>
-                    `;
+                    ui.platformsCheckboxContainer.innerHTML += `<label class="flex items-center space-x-2 text-sm"><input type="checkbox" name="platforms" value="${platform}" ${isChecked ? 'checked' : ''} class="rounded"><span>${platform}</span></label>`;
                 });
-
                 ui.postModal.classList.remove('hidden');
                 ui.postModal.classList.add('flex');
             }
 
+            async function handleFormSubmit(e) {
+                e.preventDefault();
+                if (!isAdminLoggedIn) return alert("You must be logged in to save posts.");
+                const id = document.getElementById('postId').value;
+                const selectedPlatforms = Array.from(ui.platformsCheckboxContainer.querySelectorAll('input:checked')).map(cb => cb.value);
+                const postData = { topic: document.getElementById('contentTopic').value, publishDate: document.getElementById('publishDate').value, status: document.getElementById('status').value, platforms: selectedPlatforms, type: document.getElementById('contentType').value, resources: document.getElementById('resources').value, notes: document.getElementById('notes').value, outputLink: document.getElementById('outputLink').value, isTrashed: false };
+                try {
+                    const docRef = id ? postDocumentPath(id) : doc(postsCollectionPath());
+                    await setDoc(docRef, postData, { merge: true });
+                    closeModal();
+                } catch (err) { console.error("Error saving post:", err); alert("Error saving post. See console for details."); }
+            }
+            
+            // --- CRUD Operations ---
+            async function deletePost() { if(!postIdToDelete) return; await setDoc(postDocumentPath(postIdToDelete), { isTrashed: true }, { merge: true }); hideDeleteConfirm(); }
+            async function permanentlyDeletePost() { if(!postIdToDelete) return; await deleteDoc(postDocumentPath(postIdToDelete)); hidePermanentDeleteConfirm(); }
+            async function restorePost(id) { if(!id) return; await setDoc(postDocumentPath(id), { isTrashed: false }, { merge: true }); }
+
+            // --- Weekly Title ---
+            async function handleTitleFormSubmit(e) {
+                e.preventDefault();
+                const weekId = formatDate(currentWeekStartDate);
+                const newTitle = ui.weeklyTitleInput.value.trim();
+                const titleRef = titleDocumentPath(weekId);
+                try {
+                    if (newTitle) { await setDoc(titleRef, { title: newTitle }); } else { await deleteDoc(titleRef); }
+                    closeTitleModal();
+                } catch(err) { console.error("Error saving title:", err); alert("Could not save title."); }
+            }
+
+            // --- Setup Functions (no changes needed in this section) ---
             function closeModal() { ui.postModal.classList.add('hidden'); }
             function showDeleteConfirm(id) { postIdToDelete = id; ui.deleteConfirmModal.classList.remove('hidden'); ui.deleteConfirmModal.classList.add('flex'); }
             function hideDeleteConfirm() { ui.deleteConfirmModal.classList.add('hidden'); }
             function showPermanentDeleteConfirm(id) { postIdToDelete = id; ui.permanentDeleteConfirmModal.classList.remove('hidden'); ui.permanentDeleteConfirmModal.classList.add('flex'); }
             function hidePermanentDeleteConfirm() { ui.permanentDeleteConfirmModal.classList.add('hidden'); }
-            
-            async function handleFormSubmit(e) {
-                e.preventDefault();
-                if (!isAdminLoggedIn) return alert("You must be logged in to save posts.");
-
-                const id = document.getElementById('postId').value;
-                const selectedPlatforms = Array.from(ui.platformsCheckboxContainer.querySelectorAll('input:checked')).map(cb => cb.value);
-
-                const postData = {
-                    topic: document.getElementById('contentTopic').value,
-                    publishDate: document.getElementById('publishDate').value,
-                    status: document.getElementById('status').value,
-                    platforms: selectedPlatforms,
-                    type: document.getElementById('contentType').value,
-                    resources: document.getElementById('resources').value,
-                    notes: document.getElementById('notes').value,
-                    outputLink: document.getElementById('outputLink').value,
-                    isTrashed: false
-                };
-
-                try {
-                    const docRef = id ? doc(db, 'posts', id) : doc(collection(db, 'posts'));
-                    await setDoc(docRef, postData, { merge: true });
-                    closeModal();
-                } catch (err) {
-                    console.error("Error saving post:", err);
-                    alert("Error saving post. See console for details.");
-                }
-            }
-            
-            // --- CRUD Operations ---
-            async function deletePost() { if(!postIdToDelete) return; await setDoc(doc(db, 'posts', postIdToDelete), { isTrashed: true }, { merge: true }); hideDeleteConfirm(); }
-            async function permanentlyDeletePost() { if(!postIdToDelete) return; await deleteDoc(doc(db, 'posts', postIdToDelete)); hidePermanentDeleteConfirm(); }
-            async function restorePost(id) { if(!id) return; await setDoc(doc(db, 'posts', id), { isTrashed: false }, { merge: true }); }
-
-            // --- Weekly Title ---
-            function openTitleModal() {
-                const weekId = formatDate(currentWeekStartDate);
-                ui.weeklyTitleInput.value = weeklyTitles[weekId] || '';
-                ui.titleModal.classList.remove('hidden');
-                ui.titleModal.classList.add('flex');
-            }
+            function openTitleModal() { const weekId = formatDate(currentWeekStartDate); ui.weeklyTitleInput.value = weeklyTitles[weekId] || ''; ui.titleModal.classList.remove('hidden'); ui.titleModal.classList.add('flex'); }
             function closeTitleModal() { ui.titleModal.classList.add('hidden'); }
-            async function handleTitleFormSubmit(e) {
-                e.preventDefault();
-                const weekId = formatDate(currentWeekStartDate);
-                const newTitle = ui.weeklyTitleInput.value.trim();
-                const titleRef = doc(db, 'weekly_titles', weekId);
-
-                try {
-                    if (newTitle) {
-                        await setDoc(titleRef, { title: newTitle });
-                    } else {
-                        await deleteDoc(titleRef); // Delete the doc if title is cleared
-                    }
-                    closeTitleModal();
-                } catch(err) {
-                    console.error("Error saving title:", err);
-                    alert("Could not save title.");
-                }
-            }
-            
-            // --- Event Listeners ---
             function setupEventListeners() {
                 ui.platformFilter.addEventListener('change', renderAllContent);
                 ui.statusFilter.addEventListener('change', renderAllContent);
                 ui.weekStartDayFilter.addEventListener('change', e => { currentWeekStartDate = getWeekStartDate(currentWeekStartDate, e.target.value); fetchDataForCurrentWeek(); });
                 ui.darkModeToggle.addEventListener('change', () => { const isDark = document.documentElement.classList.toggle('dark'); localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled'); renderCharts(weeklyPosts.filter(p => !p.isTrashed)); });
-                
                 ui.addPostBtn.addEventListener('click', () => openModal());
                 ui.cancelBtn.addEventListener('click', closeModal);
                 ui.postForm.addEventListener('submit', handleFormSubmit);
-
                 ui.prevWeekBtn.addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() - 7); fetchDataForCurrentWeek(); });
                 ui.nextWeekBtn.addEventListener('click', () => { currentWeekStartDate.setDate(currentWeekStartDate.getDate() + 7); fetchDataForCurrentWeek(); });
-
                 ui.adminLoginBtn.addEventListener('click', handleLogin);
                 ui.adminLogoutBtn.addEventListener('click', handleLogout);
-
                 ui.confirmDeleteBtn.addEventListener('click', deletePost);
                 ui.cancelDeleteBtn.addEventListener('click', hideDeleteConfirm);
                 ui.confirmPermanentDeleteBtn.addEventListener('click', permanentlyDeletePost);
                 ui.cancelPermanentDeleteBtn.addEventListener('click', hidePermanentDeleteConfirm);
-
                 ui.editWeeklyTitleBtn.addEventListener('click', openTitleModal);
                 ui.titleForm.addEventListener('submit', handleTitleFormSubmit);
                 ui.cancelTitleBtn.addEventListener('click', closeTitleModal);
-
                 ui.trashContainer.addEventListener('click', e => {
                     const restoreBtn = e.target.closest('.restore-post-btn');
                     if (restoreBtn) restorePost(restoreBtn.dataset.id);
                     const permanentDeleteBtn = e.target.closest('.permanent-delete-btn');
                     if (permanentDeleteBtn) showPermanentDeleteConfirm(permanentDeleteBtn.dataset.id);
                 });
-
                 [ui.postModal, ui.deleteConfirmModal, ui.permanentDeleteConfirmModal, ui.titleModal].forEach(modal => modal.addEventListener('click', e => { if (e.target === modal) e.currentTarget.classList.add('hidden'); }));
             }
 
             // --- Initial Load ---
             (function init() {
+                // This part should be at the very top of your HTML, so window.firebase.appId is available
+                // I've added a fallback to the code but it's best practice to ensure it loads first.
+                if (!window.firebase) {
+                    alert("Firebase did not load correctly. Please check the script tags in your HTML head.");
+                    return;
+                }
                 if (localStorage.getItem('darkMode') === 'enabled') {
                     document.documentElement.classList.add('dark');
                     ui.darkModeToggle.checked = true;
@@ -560,5 +314,3 @@
             })();
         });
     </script>
-</body>
-</html>
