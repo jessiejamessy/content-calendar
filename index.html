@@ -260,15 +260,13 @@
             // --- Authentication ---
             onAuthStateChanged(auth, user => {
                 if (user && !user.isAnonymous) {
-                    // If a user is logged in (and not an anonymous one), check for an admin claim
                     user.getIdTokenResult().then(idTokenResult => {
                         isAdminLoggedIn = !!idTokenResult.claims.admin;
                         updateAdminUI(user);
                     });
                 } else {
-                    // User is anonymous or logged out
                     isAdminLoggedIn = false;
-                    updateAdminUI(user); // Pass user to show anonymous status or nothing
+                    updateAdminUI(user);
                 }
             });
 
@@ -288,7 +286,6 @@
 
             async function handleLogout() {
                 await signOut(auth);
-                // After signing out, sign in anonymously to continue viewing data
                 signInAnonymously(auth).catch(err => console.error("Anonymous sign-in failed after logout:", err));
             }
 
@@ -358,7 +355,8 @@
                 }
                 filteredWeeklyPosts.forEach(post => { 
                     const pDate = new Date(post.publishDate + 'T00:00:00');
-                    let dayIndex = pDate.getUTCDay(); 
+                    // ✅ FIX: Use getDay() for local timezone instead of getUTCDay()
+                    let dayIndex = pDate.getDay(); 
                     if (ui.weekStartDayFilter.value === 'Monday') dayIndex = (dayIndex === 0) ? 6 : dayIndex - 1;
                     const grid = post.status === 'Posted' ? ui.postedDailyGrid : ui.currentWeekGrid;
                     if (grid.children[dayIndex] && !post.isTrashed) grid.children[dayIndex].appendChild(createPostCard(post)); 
@@ -526,7 +524,6 @@
                     document.documentElement.classList.add('dark');
                     ui.darkModeToggle.checked = true;
                 }
-                // Sign in anonymously for read access, then fetch data
                 signInAnonymously(auth).then(() => {
                     fetchDataForCurrentWeek();
                 }).catch(err => {
