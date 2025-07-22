@@ -57,11 +57,23 @@
       downloadPDF: document.getElementById("downloadPDF")
     };
 
+    const firebaseConfig = {
+      apiKey: "AIzaSyAqOoWBpthRQBI7Xgi-co3-Wrf8jX_nPnY",
+      authDomain: "contentcalendar-10154.firebaseapp.com",
+      projectId: "contentcalendar-10154",
+      storageBucket: "contentcalendar-10154.appspot.com",
+      messagingSenderId: "309580896666",
+      appId: "1:309580896666:web:9d987624d2efd644960223",
+      measurementId: "G-TCTW37KEQF"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     if (localStorage.getItem('theme') === 'dark') {
       document.documentElement.classList.add('dark');
       ui.darkModeToggle.checked = true;
     }
-
     ui.darkModeToggle.addEventListener('change', () => {
       document.documentElement.classList.toggle('dark');
       localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
@@ -69,45 +81,59 @@
 
     ui.downloadPDF.addEventListener('click', () => {
       const element = document.getElementById("calendarContainer");
-      html2pdf().set({
-        margin: 0.5,
-        filename: 'content-calendar.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      }).from(element).save();
+      html2pdf().from(element).save("content-calendar.pdf");
     });
+
+    async function loadPosts() {
+      try {
+        const snapshot = await db.collection("posts").get();
+        snapshot.forEach(doc => {
+          const post = doc.data();
+          const div = document.createElement("div");
+          div.className = "p-2 bg-gray-200 dark:bg-gray-700 rounded cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-600";
+          div.innerHTML = `<strong>${post.title}</strong><br><small>${post.publishDate}</small>`;
+          div.onclick = () => showEditPostModal({ ...post, id: doc.id });
+          ui.calendarContainer.appendChild(div);
+        });
+      } catch (error) {
+        console.error("Error loading posts:", error);
+        alert("Error loading posts: " + error.message);
+      }
+    }
+
+    loadPosts();
 
     function showEditPostModal(post) {
       const template = document.getElementById("editPostTemplate").content.cloneNode(true);
       const modal = template.querySelector("div");
       document.body.appendChild(modal);
+      template.getElementById("editPostId").value = post.id;
+      template.getElementById("editPostTitle").value = post.title;
+      template.getElementById("editPostCaption").value = post.caption;
+      template.getElementById("editPostDate").value = post.publishDate;
 
-      modal.querySelector("#editPostId").value = post.id;
-      modal.querySelector("#editPostTitle").value = post.title;
-      modal.querySelector("#editPostCaption").value = post.caption;
-      modal.querySelector("#editPostDate").value = post.publishDate;
-
-      modal.querySelector("#cancelEdit").onclick = () => modal.remove();
-      modal.querySelector("#editPostForm").onsubmit = async (e) => {
+      template.getElementById("cancelEdit").onclick = () => modal.remove();
+      template.getElementById("editPostForm").onsubmit = async (e) => {
         e.preventDefault();
-        const id = modal.querySelector("#editPostId").value;
-        const title = modal.querySelector("#editPostTitle").value;
-        const caption = modal.querySelector("#editPostCaption").value;
-        const date = modal.querySelector("#editPostDate").value;
-        const db = firebase.firestore();
+        const id = document.getElementById("editPostId").value;
+        const title = document.getElementById("editPostTitle").value;
+        const caption = document.getElementById("editPostCaption").value;
+        const date = document.getElementById("editPostDate").value;
+
         try {
-          await db.doc(`artifacts/${appId}/public/data/posts/${id}`).update({
+          await db.collection("posts").doc(id).update({
             title,
             caption,
             publishDate: date
           });
-          alert("Post updated successfully.");
+          modal.remove();
+          alert("Post updated.");
+          location.reload();
         } catch (error) {
+          console.error("Error updating post:", error);
           alert("Error updating post: " + error.message);
         }
-        modal.remove();
-      };
+      }
     }
   </script>
 </body>
