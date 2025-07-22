@@ -259,9 +259,21 @@
 
             // --- Authentication ---
             onAuthStateChanged(auth, user => {
-                isAdminLoggedIn = !!user; 
-                updateAdminUI(user);
-                fetchDataForCurrentWeek();
+                if (user) {
+                    // If a user is logged in, check their token for an admin claim
+                    user.getIdTokenResult().then(idTokenResult => {
+                        // The 'admin' property is the custom claim.
+                        // Set isAdminLoggedIn to true only if the claim exists and is true.
+                        isAdminLoggedIn = !!idTokenResult.claims.admin;
+                        updateAdminUI(user);
+                        fetchDataForCurrentWeek();
+                    });
+                } else {
+                    // No user is signed in.
+                    isAdminLoggedIn = false;
+                    updateAdminUI(null);
+                    fetchDataForCurrentWeek();
+                }
             });
 
             async function handleLogin() {
@@ -413,7 +425,7 @@
                 
                 // Populate standard fields
                 if (post) {
-                    // ✅ FIX: Explicitly set contentTopic from post.topic
+                    // ✅ FIX IS HERE: Explicitly set contentTopic value from post.topic
                     document.getElementById('contentTopic').value = post.topic || '';
                     document.getElementById('publishDate').value = post.publishDate || '';
                     document.getElementById('status').value = post.status || 'To Do';
