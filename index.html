@@ -57,48 +57,57 @@
       downloadPDF: document.getElementById("downloadPDF")
     };
 
-    // Dark mode toggle with localStorage
     if (localStorage.getItem('theme') === 'dark') {
       document.documentElement.classList.add('dark');
       ui.darkModeToggle.checked = true;
     }
+
     ui.darkModeToggle.addEventListener('change', () => {
       document.documentElement.classList.toggle('dark');
       localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
     });
 
-    // Download PDF functionality
     ui.downloadPDF.addEventListener('click', () => {
       const element = document.getElementById("calendarContainer");
-      html2pdf().from(element).save("content-calendar.pdf");
+      html2pdf().set({
+        margin: 0.5,
+        filename: 'content-calendar.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+      }).from(element).save();
     });
 
-    // Edit Post Modal
     function showEditPostModal(post) {
       const template = document.getElementById("editPostTemplate").content.cloneNode(true);
       const modal = template.querySelector("div");
       document.body.appendChild(modal);
-      template.getElementById("editPostId").value = post.id;
-      template.getElementById("editPostTitle").value = post.title;
-      template.getElementById("editPostCaption").value = post.caption;
-      template.getElementById("editPostDate").value = post.publishDate;
 
-      template.getElementById("cancelEdit").onclick = () => modal.remove();
-      template.getElementById("editPostForm").onsubmit = async (e) => {
+      modal.querySelector("#editPostId").value = post.id;
+      modal.querySelector("#editPostTitle").value = post.title;
+      modal.querySelector("#editPostCaption").value = post.caption;
+      modal.querySelector("#editPostDate").value = post.publishDate;
+
+      modal.querySelector("#cancelEdit").onclick = () => modal.remove();
+      modal.querySelector("#editPostForm").onsubmit = async (e) => {
         e.preventDefault();
-        const id = document.getElementById("editPostId").value;
-        const title = document.getElementById("editPostTitle").value;
-        const caption = document.getElementById("editPostCaption").value;
-        const date = document.getElementById("editPostDate").value;
+        const id = modal.querySelector("#editPostId").value;
+        const title = modal.querySelector("#editPostTitle").value;
+        const caption = modal.querySelector("#editPostCaption").value;
+        const date = modal.querySelector("#editPostDate").value;
         const db = firebase.firestore();
-        await db.doc(`artifacts/${appId}/public/data/posts/${id}`).update({
-          title,
-          caption,
-          publishDate: date
-        });
+        try {
+          await db.doc(`artifacts/${appId}/public/data/posts/${id}`).update({
+            title,
+            caption,
+            publishDate: date
+          });
+          alert("Post updated successfully.");
+        } catch (error) {
+          alert("Error updating post: " + error.message);
+        }
         modal.remove();
-        alert("Post updated.");
-      }
+      };
     }
   </script>
 </body>
